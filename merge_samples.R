@@ -1,0 +1,27 @@
+path <- '/local/data/public/zmx21/zmx21_private/GSK/Galatro/fastq_trimmed'
+setwd(path)
+allDir <- dir(path)
+allFastq <- allDir[grep('.fq',allDir)]
+
+metaData <- read.table('/local/data/public/zmx21/zmx21_private/GSK/Galatro/SraRunTable.txt',header = T,sep='\t')
+allExperiments <- unique(metaData$Sample_Name)
+
+for(i in 1:length(allExperiments)){
+  currentExperiment <- allExperiments[i]
+  currentRuns <- sort(metaData$Run[metaData$Sample_Name==currentExperiment])
+  if(length(currentRuns) > 1){
+    command <- paste0('mv ',currentRuns[1],'_1_val_1.fq ',currentExperiment,'_1.fq')
+    system(command = command)
+    command <- paste0('cat ',currentRuns[2],'_1_val_1.fq >> ',currentExperiment,'_1.fq')
+    system(command = command)
+    command <- paste0('mv ',currentRuns[1],'_2_val_2.fq ',currentExperiment,'_2.fq')
+    system(command = command)
+    command <- paste0('cat ',currentRuns[2],'_2_val_2.fq >> ',currentExperiment,'_2.fq')
+    system(command = command)
+  }else{
+    command <- paste0('mv ',currentRuns[1],'_1_val_1.fq ',currentExperiment,'_1.fq')
+    system(command = command)
+    command <- paste0('mv ',currentRuns[1],'_2_val_2.fq ',currentExperiment,'_2.fq')
+    system(command = command)
+  }
+}
