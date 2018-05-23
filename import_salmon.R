@@ -5,7 +5,7 @@ library(ggplot2)
 
 #Build txdb from GTF file. Used GRCh37, Ensembl 75
 ImportTx2gene <- function(){
-  txdb <- makeTxDbFromGFF('../../GRCh37_Ensembl75/Homo_sapiens.GRCh37.75.gtf',format = 'gtf')
+  txdb <- makeTxDbFromGFF('/local/data/public/zmx21/zmx21_private/GSK/GRCh37_Ensembl75/Homo_sapiens.GRCh37.75.gtf',format = 'gtf')
   k <- keys(txdb, keytype = "TXNAME")
   tx2gene <- select(txdb, k, "GENEID", "TXNAME")
   return(tx2gene)
