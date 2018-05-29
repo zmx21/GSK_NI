@@ -7,7 +7,7 @@ library(ggplot2)
 ImportTx2gene <- function(){
   txdb <- makeTxDbFromGFF('/local/data/public/zmx21/zmx21_private/GSK/GRCh37_Ensembl75/Homo_sapiens.GRCh37.75.gtf',format = 'gtf')
   k <- keys(txdb, keytype = "TXNAME")
-  tx2gene <- select(txdb, k, "GENEID", "TXNAME")
+  tx2gene <- AnnotationDbi::select(txdb, k, "GENEID", "TXNAME")
   return(tx2gene)
 }
 

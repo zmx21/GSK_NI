@@ -1,4 +1,4 @@
-path <- '/local/data/public/zmx21/zmx21_private/GSK/Galatro/fastq_trimmed'
+path <- '/local/data/public/zmx21/zmx21_private/GSK/Galatro/fastq_untrimmed_merged'
 setwd(path)
 allDir <- dir(path)
 allFastq <- allDir[grep('.fq',allDir)]
