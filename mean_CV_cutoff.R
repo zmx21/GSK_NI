@@ -16,22 +16,6 @@ readData <- cbind(data.frame(Sample=readDist$Sample),
                   data.frame(PercExonic = round(as.numeric(readDist$cds_exons_tag_count/readDist$total_tags),2),
                              ExonicTags = round(as.numeric(readDist$cds_exons_tag_count),2),
                              PercIntergenic = round(as.numeric((readDist$other_intergenic_tag_count)/readDist$total_tags),2)))
-
-SalmonTPM_Gene_Df <- dplyr::left_join(stack(as.data.frame(SalmonTPM_Gene)),readData,by=c('ind'='Sample')) %>% mutate(ind=substr(ind,9,10))
-# library(ggplot2)
-# library(gridExtra)
-# library(egg)
-
-p1 <- ggplot(SalmonTPM_Gene_Df) + 
-  geom_boxplot(aes(x = ind, y = values,fill=ExonicTags >= 4e+06 & PercIntergenic <= 0.25),outlier.shape = NA) + scale_x_discrete(name = "Sample") +
-  scale_y_continuous(name = "TPM",limits = quantile(SalmonTPM_Gene_Df$values, c(0.1, 0.9))) + 
-  theme(axis.text.x = element_text(angle = 90, hjust = 1,vjust = 0.6,size =15)) 
-p2 <- ggplot(SalmonTPM_Gene_Df) +
-  geom_boxplot(aes(x = ind, y = values,fill=ExonicTags >= 5e+06 & PercIntergenic <= 0.25),outlier.shape = NA) + scale_x_discrete(name = "Sample") +
-  scale_y_continuous(name = "TPM",limits = quantile(SalmonTPM_Gene_Df$values, c(0.1, 0.9))) +
-  theme(axis.text.x = element_text(angle = 90, hjust = 1,vjust = 0.6,size =15))
-ggarrange(p1,p2,ncol=1)
-
 source('pca_analysis.R')
 filtered1_PCA <- CalcPCA(SalmonTPM_Gene[,readData$PercExonic > 0.1],tables)
 filtered1 <- autoplot(filtered1_PCA$PCA, data = filtered1_PCA$Df, colour = 'readLength',size=4,shape=F) + ggtitle('PCA - PercExonic > 0.1  & ExonicTags > 0') 
@@ -63,57 +47,8 @@ FilterCountMatrix <- function(countMatrixInput,meanAbundances,cv,cvCutOffAbsolut
     return(list(countMatrix = filteredCountMatrix,numFiltered = length(rowsToFilter),categoricalCounts = categoricalCounts))
   }
 }
-LoadBiotypeMapping <- function(){
-  library(refGenome)
-  library(dplyr)
-  GTFPath <- '/local/data/public/zmx21/zmx21_private/GSK/GRCh37_Ensembl75/Homo_sapiens.GRCh37.75.gtf'
-  ens <- ensemblGenome()
-  read.gtf(ens, GTFPath,useBasedir = F)
-  gtfDf <- getGtf(ens)
-  
-  geneTable <- as.data.frame(dplyr::select(gtfDf,"gene_id","gene_biotype") %>%
-    dplyr::group_by(gene_id, gene_biotype) %>% 
-    dplyr::filter(row_number() == 1))
-  allBiotypes <- unique(geneTable$gene_biotype)
-  transcriptTable <- dplyr::filter(gtfDf,feature=='transcript') %>% dplyr::select("transcript_id","source")
-  
-  return(list(geneTable = geneTable,transcriptTable = transcriptTable))
-}
-ParseBiotypeTable <- function(categoricalCounts){
-type <- ifelse(colnames(categoricalCounts)[1] == 'gene_id','gene','transcript')
- if(type=='gene'){
-   proteinCoding <- c("protein_coding",
-                      unique(categoricalCounts$gene_biotype)[grepl("_gene",unique(categoricalCounts$gene_biotype))],
-                      'polymorphic_pseudogene')
-   pseudoGene <- c('pseudogene',
-                   unique(categoricalCounts$gene_biotype)[grepl("_pseudogene",unique(categoricalCounts$gene_biotype))])
-   lncRNA <- c('lincRNA','3prime_overlapping_ncrna','antisense','processed_transcript','sense_overlapping','sense_intronic')
-   sncRNA <- c('rRNA','misc_RNA','Mt_tRNA','snRNA','Mt_rRNA','miRNA','snoRNA')
-   
-   categoricalCounts$gene_biotype[categoricalCounts$gene_biotype %in% proteinCoding] <- 'protein_coding'
-   categoricalCounts$gene_biotype[categoricalCounts$gene_biotype %in% pseudoGene] <- 'pseudogene'
-   categoricalCounts$gene_biotype[categoricalCounts$gene_biotype %in% lncRNA] <- 'lncRNA'
-   categoricalCounts$gene_biotype[categoricalCounts$gene_biotype %in% sncRNA] <- 'sncRNA'
-   
-   return(categoricalCounts)
- }else{
-   proteinCoding <- c("protein_coding","retained_intron",
-                      unique(categoricalCounts$source)[grepl("_gene",unique(categoricalCounts$source))],
-                      'polymorphic_pseudogene',unique(categoricalCounts$source)[grepl("_decay",unique(categoricalCounts$source))])
-   
-   pseudoGene <- c('pseudogene',
-                   unique(categoricalCounts$source)[grepl("_pseudogene",unique(categoricalCounts$source))])
-   lncRNA <- c('lincRNA','3prime_overlapping_ncrna','antisense','processed_transcript','sense_overlapping','sense_intronic')
-   sncRNA <- c('rRNA','misc_RNA','Mt_tRNA','snRNA','Mt_rRNA','miRNA','snoRNA')
-   categoricalCounts$source[categoricalCounts$source %in% proteinCoding] <- 'protein_coding'
-   categoricalCounts$source[categoricalCounts$source %in% pseudoGene] <- 'pseudogene'
-   categoricalCounts$source[categoricalCounts$source %in% lncRNA] <- 'lncRNA'
-   categoricalCounts$source[categoricalCounts$source %in% sncRNA] <- 'sncRNA'
-   return(categoricalCounts)
- }
-}
 
-
+source('load_GTF.R')
 # gtfTables <- LoadBiotypeMapping()
 
 #Get Gene Level Stats
@@ -296,6 +231,25 @@ SalmonTPM_Transcript_Filt <- FilterCountMatrix(countMatrixInput = SalmonTPM_Tran
                                                meanCutOffAbsolute =quantile(meanAbundancesGene)[4])$countMatrix
 
 
+#
+SalmonTPM_Gene_Df <- dplyr::left_join(stack(as.data.frame(SalmonTPM_Gene_Filt)),
+                                      readData,by=c('ind'='Sample')) %>% mutate(ind=substr(ind,9,10))
+# library(ggplot2)
+# library(gridExtra)
+# library(egg)
+
+p1 <- ggplot(SalmonTPM_Gene_Df) + 
+  geom_boxplot(aes(x = ind, y = values,fill=ExonicTags >= 4e+06 & PercIntergenic <= 0.25),outlier.shape = NA) + scale_x_discrete(name = "Sample") +
+  scale_y_continuous(name = "TPM",limits = quantile(SalmonTPM_Gene_Df$values, c(0.1, 0.9))) + 
+  theme(axis.text.x = element_text(angle = 90, hjust = 1,vjust = 0.6,size =15)) 
+p2 <- ggplot(SalmonTPM_Gene_Df) +
+  geom_boxplot(aes(x = ind, y = values,fill=ExonicTags >= 5e+06 & PercIntergenic <= 0.25),outlier.shape = NA) + scale_x_discrete(name = "Sample") +
+  scale_y_continuous(name = "TPM",limits = quantile(SalmonTPM_Gene_Df$values, c(0.1, 0.9))) +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1,vjust = 0.6,size =15))
+ggarrange(p1,p2,ncol=1)
+
+
+
 #Housekeeping Genes
 HouseKeepingGenes <- c(GAPDH='ENSG00000111640',TREM2='ENSG00000095970',SYK='ENSG00000165025')
 HouseKeepingExp <- t(SalmonTPM_Gene[HouseKeepingGenes,])
@@ -318,4 +272,8 @@ ggplot(HouseKeepingDf,aes(x=sample,y=as.numeric(tpm),fill=gene)) +
 # mtext('Fraction of Genes', side=4,cex=2,line=3)
 # 
 
-
+sample2829Stats <-  FilterCountMatrix(countMatrix = SalmonTPM_Gene[,c('GSM3081143','GSM3081144')],
+                                                                        meanAbundances = meanAbundancesGene,
+                                                                        cv = cvGene,
+                                                                        cvCutOffAbsolute = 0,
+                                                                        meanCutOffAbsolute = 0,mappingTable = gtfTables$geneTable)
