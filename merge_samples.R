@@ -1,3 +1,6 @@
+##########################################################################################################
+#Merge fastq files of samples with multiple runs into 1 file. 
+##########################################################################################################
 path <- '/local/data/public/zmx21/zmx21_private/GSK/Galatro_Brain/fastq_trimmed/'
 # path <- '/local/data/public/zmx21/zmx21_private/GSK/Galatro/fastq_untrimmed_merged'
 setwd(path)

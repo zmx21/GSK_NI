@@ -1,3 +1,10 @@
+##########################################################################################################
+#LoadBiotypeMapping Loads a GTF file, and creates mapping between gene/transcript and their biotype
+#ParseBiotypeTable aggregates indivdual biotype categories into 4 broader categories
+##########################################################################################################
+
+#Reads GTF file, and creates biotype mapping between gene/transcript ID and biotype
+#If full=T, the full GTF file columns are returns. Otherwise, only ID and biotype.
 LoadBiotypeMapping <- function(full=F){
   library(refGenome)
   library(dplyr)
@@ -20,9 +27,13 @@ LoadBiotypeMapping <- function(full=F){
   }
   return(list(geneTable = geneTable,transcriptTable = transcriptTable))
 }
+
+#Input should be a data.frame, containg both ID and biotype. 
+#Output will be a data.frame, where biotypes are converted to a broader category
 ParseBiotypeTable <- function(categoricalCounts){
   type <- ifelse(colnames(categoricalCounts)[1] == 'gene_id','gene','transcript')
   if(type=='gene'){
+    #Define which sub-category belong to which full broad category.
     proteinCoding <- c("protein_coding",
                        unique(categoricalCounts$gene_biotype)[grepl("_gene",unique(categoricalCounts$gene_biotype))],
                        'polymorphic_pseudogene')
@@ -31,6 +42,7 @@ ParseBiotypeTable <- function(categoricalCounts){
     lncRNA <- c('lincRNA','3prime_overlapping_ncrna','antisense','processed_transcript','sense_overlapping','sense_intronic')
     sncRNA <- c('rRNA','misc_RNA','Mt_tRNA','snRNA','Mt_rRNA','miRNA','snoRNA')
     
+    #Convert detailed category into broad category, by replacing biotype to the broad category.
     categoricalCounts$gene_biotype[categoricalCounts$gene_biotype %in% proteinCoding] <- 'protein_coding'
     categoricalCounts$gene_biotype[categoricalCounts$gene_biotype %in% pseudoGene] <- 'pseudogene'
     categoricalCounts$gene_biotype[categoricalCounts$gene_biotype %in% lncRNA] <- 'lncRNA'
@@ -38,6 +50,7 @@ ParseBiotypeTable <- function(categoricalCounts){
     
     return(categoricalCounts)
   }else{
+    #Define which sub-category belong to which full broad category.
     proteinCoding <- c("protein_coding","retained_intron",
                        unique(categoricalCounts$source)[grepl("_gene",unique(categoricalCounts$source))],
                        'polymorphic_pseudogene',unique(categoricalCounts$source)[grepl("_decay",unique(categoricalCounts$source))])
@@ -46,6 +59,8 @@ ParseBiotypeTable <- function(categoricalCounts){
                     unique(categoricalCounts$source)[grepl("_pseudogene",unique(categoricalCounts$source))])
     lncRNA <- c('lincRNA','3prime_overlapping_ncrna','antisense','processed_transcript','sense_overlapping','sense_intronic')
     sncRNA <- c('rRNA','misc_RNA','Mt_tRNA','snRNA','Mt_rRNA','miRNA','snoRNA')
+    
+    #Convert detailed category into broad category, by replacing biotype to the broad category.
     categoricalCounts$source[categoricalCounts$source %in% proteinCoding] <- 'protein_coding'
     categoricalCounts$source[categoricalCounts$source %in% pseudoGene] <- 'pseudogene'
     categoricalCounts$source[categoricalCounts$source %in% lncRNA] <- 'lncRNA'

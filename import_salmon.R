@@ -1,3 +1,8 @@
+##########################################################################################################
+#Functions to import Salmon abundance using tximport. 
+#Input should be path to directory where each subdirectory is a sample, containing a quant.sf
+##########################################################################################################
+
 library(GenomicFeatures)
 library(tximport)
 library(readr)

@@ -1,3 +1,6 @@
+######################################################################################################
+#Aggegrate STAR output to Transcript and Exon level counts using FeatureCounts.
+######################################################################################################
 library(Rsubread)
 ImportSTARCounts <- function(path){
   allDir <- dir(path)
@@ -7,24 +10,33 @@ ImportSTARCounts <- function(path){
   
   GTFPath <- '/local/data/public/zmx21/zmx21_private/GSK/GRCh37_Ensembl75/Homo_sapiens.GRCh37.75.gtf'
   
-  #Summarize exon level into gene level. useMetaFeatures is thus TRUE. Same parameters as Galatro et al.
+  #Summarize exon level into gene level and transcript level. 
+  #useMetaFeatures is thus TRUE. Disallow fractional counts. 
   geneLevelCounts <- Rsubread::featureCounts(files=allPaths,isPairedEnd = T,annot.ext=GTFPath,isGTFAnnotationFile=TRUE,
-                                   GTF.featureType = 'exon',GTF.attrType = 'gene_id',requireBothEndsMapped=T,fraction = F,allowMultiOverlap=T,useMetaFeatures=T,nthreads=10)
+                                   GTF.featureType = 'exon',GTF.attrType = 'gene_id',requireBothEndsMapped=T,fraction = F,
+                                   allowMultiOverlap=T,useMetaFeatures=T,nthreads=10)
+  transcriptLevelCounts <- Rsubread::featureCounts(files=allPaths,isPairedEnd = T,annot.ext=GTFPath,isGTFAnnotationFile=TRUE,
+                                             GTF.featureType = 'exon',GTF.attrType = 'transcript_id',requireBothEndsMapped=T,fraction = F,
+                                             allowMultiOverlap=T,useMetaFeatures=T,nthreads=10)
   
   #Need to allowMultiOverlap, where all exons are assigned a count if a read overlaps multiple exons. 
-  #Feature type is exon, don't do summarizations, and output the exon_id from the GTF file
+  #Feature type is exon, don't do summarizations, and output the exon_id from the GTF file. Disallow fractional counts
   exonLevelCounts <- Rsubread::featureCounts(files=allPaths,isPairedEnd = T,annot.ext=GTFPath,isGTFAnnotationFile=TRUE,
-  GTF.featureType = 'exon',GTF.attrType = 'exon_id',useMetaFeatures=F,nthreads = 10,allowMultiOverlap=T,fraction = F)
+                                             GTF.featureType = 'exon',GTF.attrType = 'exon_id',useMetaFeatures=F,nthreads = 10,
+                                             allowMultiOverlap=T,fraction = F)
   
   colnames(geneLevelCounts$counts) <- runDir; colnames(geneLevelCounts$stat) <- c('stat_type',runDir); geneLevelCounts$targets <- runDir
   colnames(exonLevelCounts$counts) <- runDir; colnames(exonLevelCounts$stat) <- c('stat_type',runDir); exonLevelCounts$targets <- runDir
+  colnames(transcriptLevelCounts$counts) <- runDir; colnames(transcriptLevelCounts$stat) <- c('stat_type',runDir); transcriptLevelCounts$targets <- runDir
   
-  save(geneLevelCounts,file='/local/data/public/zmx21/zmx21_private/GSK/Count_Data/STARCounts_GeneLevel_WholeBrain.rda')
-  save(exonLevelCounts,file='/local/data/public/zmx21/zmx21_private/GSK/Count_Data/STARCounts_ExonLevel_WholeBrain.rda')
+  save(transcriptLevelCounts,file='/local/data/public/zmx21/zmx21_private/GSK/Count_Data/STARCounts_TranscriptLevel_Microglia.rda')
+  save(geneLevelCounts,file='/local/data/public/zmx21/zmx21_private/GSK/Count_Data/STARCounts_GeneLevel_Microglia.rda')
+  save(exonLevelCounts,file='/local/data/public/zmx21/zmx21_private/GSK/Count_Data/STARCounts_ExonLevel_Microglia.rda')
   
 }
+#Plot statistics, by parsing output of featureCounts. 
 PlotStats <- function(stats){
-  #Remove descriptio col
+  #Remove description col
   stats <- stats[,-1]
   
   sampleNames <- colnames(stats)
@@ -50,7 +62,7 @@ PlotStats <- function(stats){
   
 }
 
-#path <- '/local/data/public/zmx21/zmx21_private/GSK/Galatro/STAR_aligned_merged/'
-path <- '/local/data/public/zmx21/zmx21_private/GSK/Galatro_Brain/STAR_aligned_whole_brain'
+path <- '/local/data/public/zmx21/zmx21_private/GSK/Galatro/STAR_aligned_merged/'
+# path <- '/local/data/public/zmx21/zmx21_private/GSK/Galatro_Brain/STAR_aligned_whole_brain'
 ImportSTARCounts(path)
 # PlotStats(geneLevelCounts$stat)
