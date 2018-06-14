@@ -2,16 +2,26 @@
 #LoadBiotypeMapping Loads a GTF file, and creates mapping between gene/transcript and their biotype
 #ParseBiotypeTable aggregates indivdual biotype categories into 4 broader categories
 ##########################################################################################################
-
-#Reads GTF file, and creates biotype mapping between gene/transcript ID and biotype
-#If full=T, the full GTF file columns are returns. Otherwise, only ID and biotype.
-LoadBiotypeMapping <- function(full=F){
+#Read GTF, create mapping between gene and transcript and exon ID
+LoadGTF <- function(full=F){
   library(refGenome)
   library(dplyr)
   GTFPath <- '/local/data/public/zmx21/zmx21_private/GSK/GRCh37_Ensembl75/Homo_sapiens.GRCh37.75.gtf'
   ens <- ensemblGenome()
   read.gtf(ens, GTFPath,useBasedir = F)
   gtfDf <- getGtf(ens)
+  if(full){
+    return(gtfDf)
+  }else{
+    return(dplyr::select(gtfDf,transcript_name,gene_name,gene_id,transcript_id,exon_id))
+  }
+  return(gtfDf)
+}
+
+#Reads GTF file, and creates biotype mapping between gene/transcript ID and biotype
+#If full=T, the full GTF file columns are returns. Otherwise, only ID and biotype.
+LoadBiotypeMapping <- function(full=F){
+  gtfDf <- LoadGTF(full=T)
   if(full){
     geneTable <- as.data.frame(gtfDf %>%
                                  dplyr::group_by(gene_id, gene_biotype) %>% 

@@ -1,0 +1,6 @@
+load('../Count_Data/Correlation_Matrices/Combat_Cor.rda')
+# library(modMax)
+# geneLevelGraph <- graph_from_adjacency_matrix(abs(SalmonCor_Gene_Combat),mode = 'undirected',weighted = T)
+# geneLevelLouvain <- cluster_louvain(geneLevelGraph)
+library(NetworkToolbox)
+geneLevelModules <- louvain(abs(SalmonCor_Gene_Combat))
