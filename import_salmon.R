@@ -18,7 +18,7 @@ ImportTx2gene <- function(){
 
 ImportSalmonCounts <- function(path,tx2gene){
   allDir <- dir(path)
-  runDir <- allDir[union(grep('SRR',allDir),grep('GSM',allDir))]
+  runDir <- allDir[union(union(grep('SRR',allDir),grep('GSM',allDir)),grep('H5KNCADXX',allDir))]
   #Get paths for all samples
   allPaths <- sapply(runDir,function(x) (paste0(path,'/',x,'/quant.sf')))
   

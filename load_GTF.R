@@ -38,6 +38,7 @@ LoadBiotypeMapping <- function(full=F){
   return(list(geneTable = geneTable,transcriptTable = transcriptTable))
 }
 
+
 #Input should be a data.frame, containg both ID and biotype. 
 #Output will be a data.frame, where biotypes are converted to a broader category
 ParseBiotypeTable <- function(categoricalCounts){

@@ -3,22 +3,35 @@
 ##########################################################################################################
 
 #Load required data
-library(dplyr)
+# library(dplyr)
 # source('import_salmon.R')
 # tx2gene <- ImportTx2gene()
-# SalmonTPM <- ImportSalmonCounts('/local/data/public/zmx21/zmx21_private/GSK/Galatro/Salmon_aligned/Salmon_aligned_merged',tx2gene)
-# SalmonTPM_Gene <- SalmonTPM$geneLevel$abundance
-# SalmonTPM_Transcript <- SalmonTPM$transcriptLevel$abundance
-load(file = '../Count_Data/SalmonTPM_Transcript_Microglia.rda')
-load(file = '../Count_Data/SalmonTPM_Gene_Microglia.rda')
+
+#Galatro et al
+load(file='../Count_Data/Galatro/SalmonTPM_Gene_Microglia.rda')
 load(file = '../Count_Data/gtfTables.rda')
-readDist <- read.table(file='/local/data/public/zmx21/zmx21_private/GSK/Galatro/STAR_aligned_merged/multiqc_data/multiqc_rseqc_read_distribution.txt',
-                       header = T,stringsAsFactors = F)
-readDist$Sample <- sapply(readDist$Sample,function(x) unlist(strsplit(x,".",fixed = T))[1])
-readData <- cbind(data.frame(Sample=readDist$Sample),
+
+readDist<- read.table(file='/local/data/public/zmx21/zmx21_private/GSK/Galatro/STAR_aligned_merged/multiqc_data/multiqc_rseqc_read_distribution.txt',
+                       header = T,stringsAsFactors = F) %>% dplyr::select('Sample','cds_exons_tag_count','total_tags','other_intergenic_tag_count')
+readDist$Sample <- sapply(readDist$Sample,function(x) unlist(strsplit(x,".",fixed = T))[1])  #Parse sample name
+
+readData<-cbind(data.frame(Sample=readDist$Sample),
                   data.frame(PercExonic = round(as.numeric(readDist$cds_exons_tag_count/readDist$total_tags),2),
                              ExonicTags = round(as.numeric(readDist$cds_exons_tag_count),2),
                              PercIntergenic = round(as.numeric((readDist$other_intergenic_tag_count)/readDist$total_tags),2)))
+
+
+#Gosselin et al
+# load(file='../Count_Data/Gosselin/SalmonTPM_Gene_Microglia.rda')
+# load(file='../Count_Data/Gosselin/SalmonTPM_Transcript_Microglia.rda')
+# 
+# 
+# readDist <- read.table(file='/local/data/public/zmx21/zmx21_private/GSK/Gosselin/QC_Reports/star_multiqc_data/multiqc_rseqc_read_distribution.txt',
+#                        header = T,stringsAsFactors = F) %>% dplyr::select('Sample','cds_exons_tag_count','total_tags','introns_tag_count')
+# readData <- cbind(data.frame(Sample=readDist$Sample),
+#                   data.frame(PercExonic = round(as.numeric(readDist$cds_exons_tag_count/readDist$total_tags),2),
+#                              ExonicTags = round(as.numeric(readDist$cds_exons_tag_count),2),
+#                              PercIntronic = round(as.numeric((readDist$introns_tag_count)/readDist$total_tags),2)))
 
 #Returns a filtered matrix based on cutoff of TPM and CV.
 #If a mapping table to category is included, then returns the category of each remaining transcript/gene also
@@ -88,14 +101,14 @@ NullTranscriptLevel <- ggplot(data=gtfTables$transcriptTable, aes(x=as.factor(so
   xlab('Gene Biotype') +  scale_y_continuous("Number of Transcripts",scales::pretty_breaks(n = 10),sec.axis = sec_axis(~./nrow(SalmonTPM_Gene), name = 'Fraction of All Transcripts',breaks = scales::pretty_breaks(n = 10)))
 
 #Mean and CV cutoff trends
-meanCutoffStatsGene <- lapply(seq(0,20,1),function(x) FilterCountMatrix(countMatrix = SalmonTPM_Gene,
+meanCutoffStatsGene <- lapply(seq(0,8,0.5),function(x) FilterCountMatrix(countMatrix = SalmonTPM_Gene_Combat_Merged,
                                                                meanAbundances = meanAbundancesGene,
                                                                cv = cvGene,
                                                                cvCutOffAbsolute = 0,
                                                                meanCutOffAbsolute = x,mappingTable = gtfTables$geneTable) %>%
                                                                {ParseBiotypeTable(.$categoricalCounts)} %>%
                                                                {cbind(data.frame(cutoff=rep(x,nrow(.))),.)})
-cvCutoffStatsGene <- lapply(seq(0,5,0.2),function(x) FilterCountMatrix(countMatrix = SalmonTPM_Gene,
+cvCutoffStatsGene <- lapply(seq(0,2,0.15),function(x) FilterCountMatrix(countMatrix = SalmonTPM_Gene_Combat_Merged,
                                                                           meanAbundances = meanAbundancesGene,
                                                                           cv = cvGene,
                                                                           cvCutOffAbsolute = x,
@@ -121,12 +134,12 @@ cvCutoffStatsTranscript <- lapply(seq(0,5,0.2),function(x) FilterCountMatrix(cou
 ggplot(do.call(rbind,meanCutoffStatsGene), 
        aes(fill=as.factor(gene_biotype), x=as.factor(cutoff))) + 
   geom_bar(position="dodge") + theme(axis.text.x = element_text(size=15),axis.title = element_text(size=15),axis.text =  element_text(size=15)) + ggtitle('Gene Biotype vs TPM Cutoff')+
-  labs(x='Cutoff (TPM)',fill='Gene Biotype') +  scale_y_continuous("Number of Genes",scales::pretty_breaks(n = 10),sec.axis = sec_axis(~./nrow(SalmonTPM_Gene), name = 'Fraction of All Genes',breaks = scales::pretty_breaks(n = 10)))
+  labs(x='Cutoff (TPM)',fill='Gene Biotype') +  scale_y_continuous("Number of Genes",scales::pretty_breaks(n = 10),sec.axis = sec_axis(~./nrow(SalmonTPM_Gene_Combat_Merged), name = 'Fraction of All Genes',breaks = scales::pretty_breaks(n = 10)))
 
 ggplot(do.call(rbind,cvCutoffStatsGene), 
        aes(fill=as.factor(gene_biotype), x=as.factor(cutoff))) + 
   geom_bar(position="dodge") + theme(axis.text.x = element_text(size=15),axis.title = element_text(size=15),axis.text =  element_text(size=15)) + ggtitle('Gene Biotype vs CV Cutoff')+
-  labs(x='Cutoff (CV)',fill='Gene Biotype') +  scale_y_continuous("Number of Genes",scales::pretty_breaks(n = 10),sec.axis = sec_axis(~./nrow(SalmonTPM_Gene), name = 'Fraction of All Genes',breaks = scales::pretty_breaks(n = 10)))
+  labs(x='Cutoff (CV)',fill='Gene Biotype') +  scale_y_continuous("Number of Genes",scales::pretty_breaks(n = 10),sec.axis = sec_axis(~./nrow(SalmonTPM_Gene_Combat_Merged), name = 'Fraction of All Genes',breaks = scales::pretty_breaks(n = 10)))
 
 ggplot(do.call(rbind,meanCutoffStatsTranscript), 
        aes(fill=as.factor(source), x=as.factor(cutoff))) + 
@@ -181,10 +194,9 @@ p4Transcript <- ggplot(heatMapTranscriptLevel,aes(x = as.numeric(TPMCutoff), y =
 grid.arrange(p1Transcript, p2Transcript,p3Transcript,p4Transcript,top = textGrob("Cutoff Heat Map - Transcript Level",gp=gpar(fontsize=20)))
 
 #Different Filtering Levels, get categorical counts. 
-geneLevelCutOffTPM <- c(5,5,quantile(meanAbundancesGene)[4],quantile(meanAbundancesGene)[4])
-geneLevelCutOffCV <- c(0.3,0.5,0.3,0.5)
-transcriptLevelCutOffTPM <- c(5,5,quantile(meanAbundancesGene)[4],quantile(meanAbundancesGene)[4])
-transcriptLevelCutOffCV <- c(0.3,0.5,0.3,0.5)
+geneLevelCutOffTPM <- c(quantile(meanAbundancesGene)[2],quantile(meanAbundancesGene)[3])
+geneLevelCutOffCV <- c(0.3,0.3)
+
 
 geneLevelFiltCounts <- lapply(1:length(geneLevelCutOffTPM), function(i) FilterCountMatrix(countMatrix = SalmonTPM_Gene,
                                      meanAbundances = meanAbundancesGene,
@@ -198,8 +210,8 @@ geneLevelFiltCounts <- lapply(1:length(geneLevelCutOffTPM), function(i) FilterCo
 transLevelFiltCounts <- lapply(1:length(geneLevelCutOffTPM), function(i) FilterCountMatrix(countMatrix = SalmonTPM_Transcript,
                                      meanAbundances = meanAbundancesTranscript,
                                      cv = cvTranscript,
-                                     cvCutOffAbsolute = transcriptLevelCutOffCV[i],
-                                     meanCutOffAbsolute = transcriptLevelCutOffTPM[i],
+                                     cvCutOffAbsolute = geneLevelCutOffTPM[i],
+                                     meanCutOffAbsolute = geneLevelCutOffTPM[i],
                                      mappingTable = gtfTables$transcriptTable) %>%
                                      {ParseBiotypeTable(.$categoricalCounts)} %>%
                                      {table(.$source)})
@@ -235,8 +247,6 @@ p2 <- ggplot(SalmonTPM_Gene_Df) +
   scale_y_continuous(name = "TPM",limits = quantile(SalmonTPM_Gene_Df$values, c(0.1, 0.9))) +
   theme(axis.text.x = element_text(angle = 90, hjust = 1,vjust = 0.6,size =15))
 ggarrange(p1,p2,ncol=1)
-
-
 
 #Housekeeping Genes
 HouseKeepingGenes <- c(GAPDH='ENSG00000111640',TREM2='ENSG00000095970',SYK='ENSG00000165025')
