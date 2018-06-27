@@ -79,3 +79,33 @@ ParseBiotypeTable <- function(categoricalCounts){
     return(categoricalCounts)
   }
 }
+
+#Return Categorical counts from a list of genes/transcripts
+ExtractBioType <- function(countMatrixInput,table=T){
+  load('../Count_Data/gtfTables.rda')
+  type <- ifelse(grepl('ENST',rownames(countMatrixInput)[1]),'transcript_id','gene_id')
+  allNames <- data.frame(ids = rownames(countMatrixInput),stringsAsFactors = F)
+  colnames(allNames) <- type
+  categoricalCounts <- as.data.frame(dplyr::left_join(allNames,
+                                                      gtfTables[[ifelse(type=='transcript_id','transcriptTable','geneTable')]],by=c(type,type)))
+  broadCategoricalCounts <- ParseBiotypeTable(categoricalCounts)
+  if(table){
+    return(table(broadCategoricalCounts[,ifelse(type=='transcript_id','source','gene_biotype')]))
+  }else{
+    return(broadCategoricalCounts[,ifelse(type=='transcript_id','source','gene_biotype')])
+  }
+}
+#Return detailed Categorical counts from a list of genes/transcripts
+ExtactDetailedBioType <- function(countMatrixInput,table=T){
+  load('../Count_Data/gtfTables.rda')
+  type <- ifelse(grepl('ENST',rownames(countMatrixInput)[1]),'transcript_id','gene_id')
+  allNames <- data.frame(ids = rownames(countMatrixInput),stringsAsFactors = F)
+  colnames(allNames) <- type
+  categoricalCounts <- as.data.frame(dplyr::left_join(allNames,
+                                                      gtfTables[[ifelse(type=='transcript_id','transcriptTable','geneTable')]],by=c(type,type)))
+  if(table){
+    return(table(categoricalCounts[,ifelse(type=='transcript_id','source','gene_biotype')]))
+  }else{
+    return(categoricalCounts[,ifelse(type=='transcript_id','source','gene_biotype')])
+  }
+}

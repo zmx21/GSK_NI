@@ -1,25 +1,8 @@
 ##########################################################################################################
 #PCA based on gene expressions. Imports metadata, which could be visualzed as colors on PCA plot.
 ##########################################################################################################
-#Impot required Data
+#Import required Data
 source('sample_mapping.R')
-source('import_salmon.R')
-# mapping <- GetSampleMapping()
-# tx2gene <- ImportTx2gene()
-# SalmonTPM <- ImportSalmonCounts('/local/data/public/zmx21/zmx21_private/GSK/Galatro/Salmon_aligned/Salmon_aligned_merged',tx2gene)
-# SalmonTPM <- ImportSalmonCounts('/local/data/public/zmx21/zmx21_private/GSK/Gosselin/salmon/',tx2gene)
-
-# load('../Count_Data/SalmonTPM_Gene_Microglia_Filt.rda')
-
-#Check PCA of individual runs
-# SalmonUnmergedTPM <- ImportSalmonCounts('/local/data/public/zmx21/zmx21_private/GSK/Galatro/Salmon_aligned/Salmon_aligned_k19',tx2gene)
-# expDfSalmon <- as.data.frame(t(SalmonUnmergedTPM$geneLevel$abundance),row.names = NULL)
-# expDfSalmon$runID <- as.factor(colnames(SalmonUnmergedTPM$geneLevel$abundance))
-# expDfSalmon$GSM <- as.factor(sapply(colnames(SalmonUnmergedTPM$geneLevel$abundance),function(x) mapping$GSM [mapping$SRR==x]))
-# multRunDf <- expDfSalmon[(expDfSalmon$GSM %in% names(which(table(expDfSalmon$GSM) > 1))),]
-# rownames(multRunDf) <- sapply(multRunDf$runID,function(x) paste0(unlist(strsplit(as.character(x),''))[9:10],collapse = ''))
-# multRunPCA <- prcomp(multRunDf[,which(!colnames(expDfSalmon) %in% c('GSM','runID'))])
-# autoplot(multRunPCA, data = multRunDf, colour = 'GSM',size=2,shape = FALSE, label.size = 3)
 
 #Collections metadata, from a count matrix (where colnames are sample names)
 #also need the tables, which is a list of tables with run info, alignment info, and read distribution info. 
@@ -47,11 +30,11 @@ CollectMetadata <- function(inputMatrix,full=F){
     dplyr::select(Sample_Name,AvgSpotLen,gender,age) %>% dplyr::mutate(BulkBrain = 0)
   alignmentTable_Gosselin <- read.table(file='/local/data/public/zmx21/zmx21_private/GSK/Gosselin/salmon/multiqc_data/multiqc_general_stats.txt',header = T,stringsAsFactors = F)
   readDist_Gosselin <- read.table(file='/local/data/public/zmx21/zmx21_private/GSK/Gosselin/QC_Reports/star_multiqc_data/multiqc_rseqc_read_distribution.txt',header=T,stringsAsFactors = F) %>%
-    dplyr::mutate(other_intergenic_tag_count=NA,other_intergenic_tag_pct=NA)
+    dplyr::mutate(other_intergenic_tag_count=0,other_intergenic_tag_pct=0)
 
   alignmentTable_Olah <- read.table(file='/local/data/public/zmx21/zmx21_private/GSK/Olah/salmon/multiqc_data/multiqc_general_stats.txt',header = T,stringsAsFactors = F)
   readDist_Olah <- read.table(file='/local/data/public/zmx21/zmx21_private/GSK/Olah/QC_Reports/star_multiqc_data/multiqc_rseqc_read_distribution.txt',header=T,stringsAsFactors = F) %>%
-    dplyr::mutate(other_intergenic_tag_count=NA,other_intergenic_tag_pct=NA)
+    dplyr::mutate(other_intergenic_tag_count=0,other_intergenic_tag_pct=0)
   
   
   tables <- list(runTable=rbind(runTable_Galatro,runTable_Gosselin),
@@ -77,14 +60,19 @@ CollectMetadata <- function(inputMatrix,full=F){
                      by = c('Sample_Name'='Sample_Name')) %>% 
     dplyr::left_join(dplyr::select(tables$readDist,Sample_Name=Sample,exonTags = cds_exons_tag_count,
                                    intronTags = introns_tag_count,totalTags = total_tags,intergenicTags=other_intergenic_tag_count),by=c('Sample_Name'='Sample_Name'))
-  df <- cbind(df,dfMetadata)
+  df <- cbind(df,dfMetadata%>% dplyr::select(-Sample_Name))
   #Add expType and instrument for Gosselin Samples
   GosselinAddtlData <- read.table(file = '/local/data/public/zmx21/zmx21_private/GSK/Gosselin/SraRunTable_Parsed.txt',header = T,sep = '\t',stringsAsFactors = F) %>%
     dplyr::select(Sample_Name,Instrument,Library_Name) %>% 
     dplyr::mutate(expType = ifelse(grepl('ExVivo',Library_Name),'ExVivo','InVitro')) %>% 
     dplyr::select(-Library_Name)
-  df <- cbind(df,left_join(data.frame(Sample_Name=df$Sample_Name,stringsAsFactors = F),GosselinAddtlData,by=c('Sample_Name' = 'Sample_Name')))
-  rownames(df) <- sapply(df$Sample_Name,function(x) paste0(ifelse(substr(x,1,3)=='GSM','L','S'),substr(x,nchar(x)-1,nchar(x))))
+  df <- cbind(df,left_join(data.frame(Sample_Name=df$Sample_Name,stringsAsFactors = F),GosselinAddtlData,by=c('Sample_Name' = 'Sample_Name')) %>% dplyr::select(-Sample_Name))
+  rownames(df) <- sapply(1:nrow(df),function(i) ifelse(df$dataset[i]=="Olah",
+                                                           paste0('OLA_',substr(df$Sample_Name[i],11,12),'_',
+                                                                  substr(df$Sample_Name[i],20,22)),
+                                                           ifelse(df$dataset[i]=='Galatro',
+                                                                  paste0('GAL',substr(df$Sample_Name[i],9,10)),
+                                                                  paste0('GOS',substr(df$Sample_Name[i],9,10)))))
   return(df)
 }
 

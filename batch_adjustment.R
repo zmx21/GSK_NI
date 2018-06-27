@@ -1,10 +1,8 @@
-################################################################################################
 #Batch correction, 
 #input should be count matrix, expType specifies whether batch correction should be performed on 
 #expType of Gosselin. Full specifies whether batch correction should be performed on dataset alone. 
 #output is Combat and PC corrected count matrix
-########################################COMBAT##########################################
-RunCombat <- function(SalmonTPM_Gene_Merged,SalmonTPM_Transcript_Merged = NULL,Samples,expType = F,full=F){
+RunCombat <- function(Gene_Matrix,Transcript_Matrix = NULL,Samples,expType = F,full=F){
   library(dplyr)
   #Batch Adjustment using Combat. Input is count Matrix (where rows are genes and columns are samples)
   #Metadata is data.frame, with mapping between batch and sample. 
@@ -19,9 +17,9 @@ RunCombat <- function(SalmonTPM_Gene_Merged,SalmonTPM_Transcript_Merged = NULL,S
   
   #Load batch Information of each sample, Galatro et al
   runTable_Galatro <- rbind(read.table(file = '/local/data/public/zmx21/zmx21_private/GSK/Galatro/SraRunTable.txt',header = T,sep = '\t',stringsAsFactors = F),
-                            read.table(file = '/local/data/public/zmx21/zmx21_private/GSK/Galatro_Brain//SraRunTable.txt',header = T,sep = '\t',stringsAsFactors = F))
+                            read.table(file = '/local/data/public/zmx21/zmx21_private/GSK/Galatro_Brain/SraRunTable.txt',header = T,sep = '\t',stringsAsFactors = F))
   #No batches in Olah
-  OlahBatches <- data.frame(Sample_Name = colnames(SalmonTPM_Gene_Merged)[sapply(colnames(SalmonTPM_Gene_Merged),function(x) grepl('H5KN',x))])
+  OlahBatches <- data.frame(Sample_Name = colnames(Gene_Matrix)[sapply(colnames(Gene_Matrix),function(x) grepl('H5KN',x))])
   OlahBatches$batch <- rep('Olah',nrow(OlahBatches))
   
   
@@ -30,25 +28,25 @@ RunCombat <- function(SalmonTPM_Gene_Merged,SalmonTPM_Transcript_Merged = NULL,S
   runTable_Gosselin <- dplyr::mutate(runTable_Gosselin,expType = ifelse(grepl('ExVivo',Library_Name),'ExVivo','InVitro'))
   
   #Choose which samples to include, based on provided Samples character vector.
-  GalatroSamples <- which(colnames(SalmonTPM_Gene_Merged)%in%runTable_Galatro$Sample_Name)
-  GosselinSamples <- which(colnames(SalmonTPM_Gene_Merged)%in%runTable_Gosselin$Sample_Name)
-  OlahSamples <- which(colnames(SalmonTPM_Gene_Merged)%in%OlahBatches$Sample_Name)
+  GalatroSamples <- which(colnames(Gene_Matrix)%in%runTable_Galatro$Sample_Name)
+  GosselinSamples <- which(colnames(Gene_Matrix)%in%runTable_Gosselin$Sample_Name)
+  OlahSamples <- which(colnames(Gene_Matrix)%in%OlahBatches$Sample_Name)
   SamplesIndices <- list(Galatro = GalatroSamples,Gosselin = GosselinSamples, Olah = OlahSamples)
 
   
   if(!full){
-    GalatroBatches <- dplyr::filter(runTable_Galatro,Sample_Name%in%colnames(SalmonTPM_Gene_Merged)) %>%
+    GalatroBatches <- dplyr::filter(runTable_Galatro,Sample_Name%in%colnames(Gene_Matrix)) %>%
       dplyr::select(AvgSpotLen,Sample_Name,age,gender) %>%
       dplyr::mutate(batch=ifelse(AvgSpotLen==202 | AvgSpotLen==199,'GalatroIllumina','GalatroTakara')) %>%
       dplyr::distinct(Sample_Name,.keep_all=T) %>% dplyr::select(Sample_Name,batch)
     #Based on whether expType should be considered as a batch, merge different data frames. 
     if(!expType){
-      GosselinBatches <- dplyr::filter(runTable_Gosselin,Sample_Name%in%colnames(SalmonTPM_Gene_Merged)) %>%
+      GosselinBatches <- dplyr::filter(runTable_Gosselin,Sample_Name%in%colnames(Gene_Matrix)) %>%
         dplyr::select(AvgSpotLen,Sample_Name,gender,Instrument) %>%
         dplyr::mutate(batch=ifelse(Instrument=='Illumina HiSeq 4000','GosselinIllumina','GosselinNextSeq')) %>%
         dplyr::distinct(Sample_Name,.keep_all=T) %>% dplyr::select(Sample_Name,batch)
     }else{
-      GosselinBatches <- dplyr::filter(runTable_Gosselin,Sample_Name%in%colnames(SalmonTPM_Gene_Merged)) %>%
+      GosselinBatches <- dplyr::filter(runTable_Gosselin,Sample_Name%in%colnames(Gene_Matrix)) %>%
         dplyr::select(AvgSpotLen,Sample_Name,gender,Instrument,batch = expType) %>%
         dplyr::distinct(Sample_Name,.keep_all=T) %>% dplyr::select(Sample_Name,batch)
     }
@@ -58,13 +56,13 @@ RunCombat <- function(SalmonTPM_Gene_Merged,SalmonTPM_Transcript_Merged = NULL,S
     SamplesIndices <- unlist(SamplesIndices[Samples])
     Batches <- do.call(rbind,Batches[Samples])
     rownames(Batches) <- Batches$Sample_Name
-    Batches <- Batches[colnames(SalmonTPM_Gene_Merged[,SamplesIndices]),]
+    Batches <- Batches[colnames(Gene_Matrix[,SamplesIndices]),]
   }else{
-    GalatroBatches <- dplyr::filter(runTable_Galatro,Sample_Name%in%colnames(SalmonTPM_Gene_Merged)) %>%
+    GalatroBatches <- dplyr::filter(runTable_Galatro,Sample_Name%in%colnames(Gene_Matrix)) %>%
       dplyr::select(AvgSpotLen,Sample_Name,age,gender) %>%
       dplyr::mutate(batch='Galatro') %>%
       dplyr::distinct(Sample_Name,.keep_all=T) %>% dplyr::select(Sample_Name,batch)
-    GosselinBatches <- dplyr::filter(runTable_Gosselin,Sample_Name%in%colnames(SalmonTPM_Gene_Merged)) %>%
+    GosselinBatches <- dplyr::filter(runTable_Gosselin,Sample_Name%in%colnames(Gene_Matrix)) %>%
       dplyr::select(AvgSpotLen,Sample_Name,gender,Instrument) %>% dplyr::mutate(batch='Gosselin') %>%
       dplyr::distinct(Sample_Name,.keep_all=T) %>% dplyr::select(Sample_Name,batch)
     Batches <- list(Galatro = GalatroBatches, Gosselin = GosselinBatches, Olah = OlahBatches)
@@ -74,12 +72,12 @@ RunCombat <- function(SalmonTPM_Gene_Merged,SalmonTPM_Transcript_Merged = NULL,S
     SamplesIndices <- unlist(SamplesIndices[Samples])
     Batches <- do.call(rbind,Batches[Samples])
     rownames(Batches) <- Batches$Sample_Name
-    Batches <- Batches[colnames(SalmonTPM_Gene_Merged[,SamplesIndices]),]
+    Batches <- Batches[colnames(Gene_Matrix[,SamplesIndices]),]
   }
   #Run batch correction, on all datasets which were specified in Samples
-  SalmonTPM_Gene_Combat_Merged <- BatchAdjustCombat(SalmonTPM_Gene_Merged[,SamplesIndices],Batches)
-  if(!is.null(SalmonTPM_Transcript_Merged)){
-    SalmonTPM_Transcript_Combat_Merged <- BatchAdjustCombat(SalmonTPM_Transcript_Merged[,SamplesIndices],Batches)
+  SalmonTPM_Gene_Combat_Merged <- BatchAdjustCombat(Gene_Matrix[,SamplesIndices],Batches)
+  if(!is.null(Transcript_Matrix)){
+    SalmonTPM_Transcript_Combat_Merged <- BatchAdjustCombat(Transcript_Matrix[,SamplesIndices],Batches)
   }else{
     SalmonTPM_Transcript_Combat_Merged <- NULL
   }
@@ -87,6 +85,102 @@ RunCombat <- function(SalmonTPM_Gene_Merged,SalmonTPM_Transcript_Merged = NULL,S
               SalmonTPM_Transcript_Combat_Merged=SalmonTPM_Transcript_Combat_Merged,
               Batches=Batches))
 }
+
+#Helper functin to extract a dataset from a merged matrix.
+ExtractDataset <- function(countMatrix,Sample){
+  if(Sample=='Galatro'){
+    countMatrix[,sapply(colnames(countMatrix),function(x) substr(x,1,3) == 'GSM')]
+  }else if (Sample=='Gosselin'){
+    countMatrix[,sapply(colnames(countMatrix),function(x) substr(x,1,3) == 'SRR')]
+  }else if (Sample=='Olah'){
+    countMatrix[,sapply(colnames(countMatrix),function(x) substr(x,1,3) == 'H5K')]
+  }
+}
+
+
+#Preprocess data to be passed to Combat
+RunBatchCorrection <- function(GeneMatrix,TranscriptMatrix,Sample,expType=F,full=F,plots=F,figName=NULL){
+  #Filter any rows with all zero counts
+  GeneMatrix <- GeneMatrix[apply(GeneMatrix,1,function(x) !all(x==0)),]
+  TranscriptMatrix <- TranscriptMatrix[apply(TranscriptMatrix,1,function(x) !all(x==0)),]
+  
+  MatrixCorrected <- RunCombat(GeneMatrix,TranscriptMatrix,Samples = Sample,expType = expType,full= full)
+  PCA_PostCorrection_Gene <- CalcPCA(MatrixCorrected$SalmonTPM_Gene_Combat_Merged)
+  PCA_PostCorrection_Gene$Df$batch <- MatrixCorrected$Batches$batch
+  
+  PCA_PostCorrection_Transcript <- CalcPCA(MatrixCorrected$SalmonTPM_Transcript_Combat_Merged)
+  PCA_PostCorrection_Transcript$Df$batch <- MatrixCorrected$Batches$batch
+  
+  PCA_PreCorrection_Gene <- CalcPCA(GeneMatrix)
+  PCA_PreCorrection_Gene$Df$batch <- MatrixCorrected$Batches$batch
+  
+  PCA_PreCorrection_Transcript <- CalcPCA(TranscriptMatrix)
+  PCA_PreCorrection_Transcript$Df$batch <- MatrixCorrected$Batches$batch
+  
+  
+  if(plots){
+    PCA_PostCorrectionPlot <- list(autoplot(PCA_PostCorrection_Gene$PCA,data=PCA_PostCorrection_Gene$Df,colour='batch',size=4,shape=F) + ggtitle('Post Batch Correction - Gene'),
+                                   autoplot(PCA_PostCorrection_Transcript$PCA,data=PCA_PostCorrection_Transcript$Df,colour='batch',size=4,shape=F) + ggtitle('Post Batch Correction - Transcript'))
+    
+    PCA_PreCorrectionPlot <- list(autoplot(PCA_PreCorrection_Gene$PCA,data=PCA_PreCorrection_Gene$Df,colour='batch',size=4,shape=F) + ggtitle('Pre Batch Correction - Gene'),
+                                  autoplot(PCA_PreCorrection_Transcript$PCA,data=PCA_PreCorrection_Transcript$Df,colour='batch',size=4,shape=F) + ggtitle('Pre Batch Correction - Transcript'))
+    library(egg)
+    tiff(file=paste0('../Figures/Batch_Correction/',figName,'.tiff'),width=800,height=500)
+    ggarrange(plots = c(PCA_PreCorrectionPlot,PCA_PostCorrectionPlot),ncol=2)
+    dev.off()
+    return(list(PCA_Plots = list(PCA_PreCorrectionPlot,PCA_PostCorrectionPlot),MatrixCorrected=MatrixCorrected))
+  }
+  
+  return(list(MatrixCorrected=MatrixCorrected))
+}
+
+RunBatchForAllData <- function(plots){
+  source('pca_analysis.R')
+  load('../Count_Data/TPM_Filtered/TPM_Microglia_Gene_Merged.rda')
+  load('../Count_Data/TPM_Filtered/TPM_Microglia_Transcript_Merged.rda')
+  GalatroSamples_Genes <- ExtractDataset(TPM_Microglia_Gene_Merged,'Galatro')
+  GosselinSamples_Genes <- ExtractDataset(TPM_Microglia_Gene_Merged,'Gosselin')
+  OlahSamples_Genes <- ExtractDataset(TPM_Microglia_Gene_Merged,'Olah')
+  GalatroSamples_Transcripts <- ExtractDataset(TPM_Microglia_Transcript_Merged,'Galatro')
+  GosselinSamples_Transcripts <- ExtractDataset(TPM_Microglia_Transcript_Merged,'Gosselin')
+  OlahSamples_Transcripts <- ExtractDataset(TPM_Microglia_Transcript_Merged,'Olah')
+  
+  #Batch correction of Galatro lib type
+  GalatroCorrected <- RunBatchCorrection(log2(GalatroSamples_Genes+1),log2(GalatroSamples_Transcripts+1),Sample='Galatro',expType = F,full=F,plots = plots,figName = 'GalatroLibCorrection')
+  #Batch Correction for Gosselin ExpType
+  Gosselin_ExpType_Corrected <- RunBatchCorrection(log2(GosselinSamples_Genes+1),log2(GosselinSamples_Transcripts+1),Sample='Gosselin',expType = T,full=F,plots = plots,figName = 'GosselinExpTypeCorrection')
+  #Batch Correction for Gosselin Instrument Type
+  Gosselin_Instrument_Corrected <- RunBatchCorrection(Gosselin_ExpType_Corrected$MatrixCorrected$SalmonTPM_Gene_Combat_Merged,
+                                                      Gosselin_ExpType_Corrected$MatrixCorrected$SalmonTPM_Transcript_Combat_Merged,
+                                                      Sample='Gosselin',expType = F,full=F,plots = plots,figName = 'GosselinInstrumentCorrection')
+  #Merge all individual datasets after individually correction
+  MergedIndivCorrected <- list(Transcript = 
+                                 lapply(list(GalatroCorrected,Gosselin_Instrument_Corrected),
+                                        function(x) x$MatrixCorrected$SalmonTPM_Transcript_Combat_Merged) %>% {c(.,list(log2(OlahSamples_Transcripts + 1)))},
+                               Gene = 
+                                 lapply(list(GalatroCorrected,Gosselin_Instrument_Corrected),
+                                        function(x) x$MatrixCorrected$SalmonTPM_Gene_Combat_Merged) %>% {c(.,list(log2(OlahSamples_Genes+1)))})
+  
+  #Only take genes/transcripts which are shared across dataset.
+  SharedGenes <- lapply(MergedIndivCorrected$Gene,rownames) %>% {intersect(.[[1]],intersect(.[[2]],.[[3]]))}
+  SharedTranscript <- lapply(MergedIndivCorrected$Transcript,rownames) %>% {intersect(.[[1]],intersect(.[[2]],.[[3]]))}
+  MergedIndivCorrected$Gene <- lapply(MergedIndivCorrected$Gene,function(x) x[SharedGenes,]) %>% {do.call(cbind,.)}
+  MergedIndivCorrected$Transcript <- lapply(MergedIndivCorrected$Transcript,function(x) x[SharedTranscript,]) %>% {do.call(cbind,.)}
+  #Remove 0 counts row
+  MergedIndivCorrected$Gene <- MergedIndivCorrected$Gene[apply(MergedIndivCorrected$Gene,1,function(x) !all(x==0)),]
+  MergedIndivCorrected$Transcript <- MergedIndivCorrected$Transcript[apply(MergedIndivCorrected$Transcript,1,function(x) !all(x==0)),]
+  
+  #Global batch correction.
+  MergedFinalBatchCorrected <- RunBatchCorrection(MergedIndivCorrected$Gene,MergedIndivCorrected$Transcript,c('Galatro','Gosselin','Olah'),expType = F,full = T)
+  SalmonTPM_Combat_ExpCorrected <- MergedFinalBatchCorrected$MatrixCorrected
+  save(SalmonTPM_Combat_ExpCorrected,file='../Count_Data/Batch_Corrected/SalmonTPM_Combat_ExpCorrected.rda')
+  #save(list = ls(environment()),file='../CodeImages/BatchCorrection.RData')
+  
+}
+
+
+
+
 
 ########################################PC Regress out##########################################
 # PC_Correction <- function(countMatrix,metadata){
