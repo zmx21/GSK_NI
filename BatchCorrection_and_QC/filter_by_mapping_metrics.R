@@ -121,6 +121,6 @@ FilterAllSamplesByMappingRate <- function(plots=T)
   save(TPM_Microglia_Transcript_Merged,file='../../Count_Data/Read_Filtered/TPM_Microglia_Transcript_Merged_ReadFilt.rda')
   save(TPM_WholeBrain_Gene,file='../../Count_Data/Read_Filtered/TPM_WholeBrain_Gene.rda')
   save(TPM_WholeBrain_Transcript,file='../../Count_Data/Read_Filtered/TPM_WholeBrain_Transcript')
-  save(list = ls(environment()),file='../../CodeImages/MappingFiltering.RData')
+  # save(list = ls(environment()),file='../../CodeImages/MappingFiltering.RData')
   
 }

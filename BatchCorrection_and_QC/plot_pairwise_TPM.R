@@ -102,6 +102,6 @@ SavePairwiseTPMPlots <- function(){
   tiff(filename = '../../Figures/MicrogliaVSBrain_TPM.tiff',width = 1000,height = 550)
   egg::ggarrange(plots=BrainComparisonPlots,ncol=3)
   dev.off()
-  save(list = ls(environment()),file='../../CodeImages/PairWisePlots.RData')
+  # save(list = ls(environment()),file='../../CodeImages/PairWisePlots.RData')
   
 }

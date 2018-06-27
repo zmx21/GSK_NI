@@ -174,7 +174,7 @@ RunBatchForAllData <- function(plots){
   MergedFinalBatchCorrected <- RunBatchCorrection(MergedIndivCorrected$Gene,MergedIndivCorrected$Transcript,c('Galatro','Gosselin','Olah'),expType = F,full = T)
   SalmonTPM_Combat_ExpCorrected <- MergedFinalBatchCorrected$MatrixCorrected
   save(SalmonTPM_Combat_ExpCorrected,file='../../Count_Data/Batch_Corrected/SalmonTPM_Combat_ExpCorrected.rda')
-  #save(list = ls(environment()),file='../../CodeImages/BatchCorrection.RData')
+  save(list = ls(environment()),file='../../CodeImages/BatchCorrection.RData')
   
 }
 

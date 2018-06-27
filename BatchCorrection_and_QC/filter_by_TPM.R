@@ -140,7 +140,7 @@ FilterByTPM <- function(plots=T,inputPath,outputPath,percentile){
   save(TPM_WholeBrain_Gene,file=paste0(outputPath,'/TPM_WholeBrain_Gene.rda'))
   save(TPM_WholeBrain_Transcript,file= paste0(outputPath,'/TPM_WholeBrain_Transcript.rda'))
 
-  #save(list = ls(environment()),file=paste0('../../CodeImages/TPMFiltering_',as.character(percentile),'.RData'))
+  # save(list = ls(environment()),file=paste0('../../CodeImages/TPMFiltering_',as.character(percentile),'.RData'))
 }
 #FilterByTPM(plots = F,inputPath = '../../Count_Data/Read_Filtered/',outputPath = '../../Count_Data/TPM_Filtered/',percentile=0.75)
 
