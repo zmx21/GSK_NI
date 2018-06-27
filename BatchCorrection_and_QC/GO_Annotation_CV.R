@@ -1,6 +1,6 @@
-load('../Count_Data/Batch_Corrected/SalmonTPM_Combat_ExpCorrected')
-#load('../Count_Data/SalmonTPM_Gene_Merged_GeneFilt.rda')
-load('../Count_Data/geneGtfTableFull.rda')
+load('../../Count_Data/Batch_Corrected/SalmonTPM_Combat_ExpCorrected')
+#load('../../Count_Data/SalmonTPM_Gene_Merged_GeneFilt.rda')
+load('../../Count_Data/geneGtfTableFull.rda')
 proteinCodingGenes <- geneGtfTableFull %>% dplyr::filter(gene_biotype=='protein_coding') %>% dplyr::select(gene_id) %>% t() %>% as.vector()
 
 batchCorrected <- SalmonTPM_Combat_ExpCorrected$SalmonTPM_Gene_Combat_Merged
@@ -17,8 +17,8 @@ batchCorrectedLowCVGenes <- data.frame(gene_id=rownames(batchCorrectedLowCV),str
 batchCorrectedHighCVGene <- data.frame(gene_id=rownames(batchCorrectedHighCV),stringsAsFactors = F) %>% 
   left_join(dplyr::select(geneGtfTableFull,gene_id,gene_name)) %>%
   dplyr::select(gene_name) %>% t() %>% as.vector()
-write(batchCorrectedLowCVGenes,file='../CV_GOAnno/lowCVGenes.txt')
-write(batchCorrectedHighCVGene,file='../CV_GOAnno/highCVGenes.txt')
+write(batchCorrectedLowCVGenes,file='../../CV_GOAnno/lowCVGenes.txt')
+write(batchCorrectedHighCVGene,file='../../CV_GOAnno/highCVGenes.txt')
 
   
 library(enrichR)
@@ -36,8 +36,8 @@ batchCorrectedLowCVGO$GO_Cellular_Component_2017$Overlap <- sapply(batchCorrecte
 
 
 library(openxlsx)
-write.xlsx(list(batchCorrectedLowCVGO$GO_Molecular_Function_2017,batchCorrectedLowCVGO$GO_Biological_Process_2017,batchCorrectedLowCVGO$GO_Cellular_Component_2017),file='../batchCorrectedLowCVGO.xlsx',sheetName=c('Molecular Process','Biological Process','Cellular Component'))
-write.xlsx(list(batchCorrectedHighCVGO$GO_Molecular_Function_2017,batchCorrectedHighCVGO$GO_Biological_Process_2017,batchCorrectedHighCVGO$GO_Cellular_Component_2017),file='../batchCorrectedHighCVGO.xlsx',sheetName=c('Molecular Process','Biological Process','Cellular Component'))
+write.xlsx(list(batchCorrectedLowCVGO$GO_Molecular_Function_2017,batchCorrectedLowCVGO$GO_Biological_Process_2017,batchCorrectedLowCVGO$GO_Cellular_Component_2017),file='../../batchCorrectedLowCVGO.xlsx',sheetName=c('Molecular Process','Biological Process','Cellular Component'))
+write.xlsx(list(batchCorrectedHighCVGO$GO_Molecular_Function_2017,batchCorrectedHighCVGO$GO_Biological_Process_2017,batchCorrectedHighCVGO$GO_Cellular_Component_2017),file='../../batchCorrectedHighCVGO.xlsx',sheetName=c('Molecular Process','Biological Process','Cellular Component'))
 
 
 
@@ -69,8 +69,8 @@ ggplot(PantherDf) + aes(x=GOAnnotation,y=Fraction,fill=CV) + geom_bar(stat="iden
 # percentileCorrectedHighCVGO$GO_Biological_Process_2017$Overlap <- sapply(percentileCorrectedHighCVGO$GO_Biological_Process_2017$Overlap,function(x) gsub('/',' out of ',x))
 # percentileCorrectedLowCVGO$GO_Cellular_Component_2017$Overlap <- sapply(percentileCorrectedLowCVGO$GO_Cellular_Component_2017$Overlap,function(x) gsub('/',' out of ',x))
 # percentileCorrectedHighCVGO$GO_Cellular_Component_2017$Overlap <- sapply(percentileCorrectedHighCVGO$GO_Cellular_Component_2017$Overlap,function(x) gsub('/',' out of ',x))
-# write.xlsx(list(percentileCorrectedLowCVGO$GO_Molecular_Function_2017,percentileCorrectedLowCVGO$GO_Biological_Process_2017,percentileCorrectedLowCVGO$GO_Cellular_Component_2017),file='../percentileCorrectedLowCVGO.xlsx',sheetName=c('Molecular Process','Biological Process','Cellular Component'))
-# write.xlsx(list(percentileCorrectedHighCVGO$GO_Molecular_Function_2017,percentileCorrectedHighCVGO$GO_Biological_Process_2017,percentileCorrectedHighCVGO$GO_Cellular_Component_2017),file='../percentileCorrectedHighCVGO.xlsx',sheetName=c('Molecular Process','Biological Process','Cellular Component'))
+# write.xlsx(list(percentileCorrectedLowCVGO$GO_Molecular_Function_2017,percentileCorrectedLowCVGO$GO_Biological_Process_2017,percentileCorrectedLowCVGO$GO_Cellular_Component_2017),file='../../percentileCorrectedLowCVGO.xlsx',sheetName=c('Molecular Process','Biological Process','Cellular Component'))
+# write.xlsx(list(percentileCorrectedHighCVGO$GO_Molecular_Function_2017,percentileCorrectedHighCVGO$GO_Biological_Process_2017,percentileCorrectedHighCVGO$GO_Cellular_Component_2017),file='../../percentileCorrectedHighCVGO.xlsx',sheetName=c('Molecular Process','Biological Process','Cellular Component'))
 
 # df <- data.frame(cvBatchCorrected=cvBatchCorrected,cvPercentile=cvPercentile)
 # get_density <- function(x, y, n = 100) {

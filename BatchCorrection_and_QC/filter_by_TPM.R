@@ -55,7 +55,7 @@ FilterByTPM <- function(plots=T,inputPath,outputPath,percentile){
   Filtering_Biotype_Microglia <- Filtering_Biotype_Microglia[,c(6,1,2,3,4,5)]  #Switch column orders
   
   if(plots){
-    tiff(height=600,width=500,filename = '../Figures/TPM_Filtering//MicrgoliaTPMFilteringStats.tiff')
+    tiff(height=600,width=500,filename = '../../Figures/TPM_Filtering//MicrgoliaTPMFilteringStats.tiff')
     grid.arrange(top='Microglia TPM Filtering',tableGrob(Filtering_Biotype_Microglia))
     dev.off()
   }
@@ -74,7 +74,7 @@ FilterByTPM <- function(plots=T,inputPath,outputPath,percentile){
                                   data.frame(Counts=as.vector(OlahSamples_Transcripts_Prefilt)) %>% mutate(Dataset = 'Olah',Filt='Prefilt'),
                                   data.frame(Counts=as.vector(OlahSamples_Transcripts)) %>% mutate(Dataset = 'Olah',Filt='Postfilt'))
   if(plots){
-      tiff(height=600,width=1200,filename = '../Figures/TPM_Comparison/PrePostTPMFiltering_MicrogliaTPM.tiff')
+      tiff(height=600,width=1200,filename = '../../Figures/TPM_Comparison/PrePostTPMFiltering_MicrogliaTPM.tiff')
       ggarrange(ggplot(PrePostFilt_Gene, aes(x=Dataset, y=Counts, fill=as.factor(Filt))) + 
                 geom_boxplot(outlier.shape = NA) + 
                 ggtitle('Gene Level') + 
@@ -111,7 +111,7 @@ FilterByTPM <- function(plots=T,inputPath,outputPath,percentile){
   Filtering_Biotype_WholeBrain <- Filtering_Biotype_WholeBrain[,c(6,1,2,3,4,5)]  #Switch column orders
   
   if(plots){
-    tiff(height=600,width=500,filename = '../Figures/TPM_Filtering/WholeBrainTPMFilteringStats.tiff')
+    tiff(height=600,width=500,filename = '../../Figures/TPM_Filtering/WholeBrainTPMFilteringStats.tiff')
     grid.arrange(top='Whole Brain TPM Filtering',tableGrob(Filtering_Biotype_WholeBrain))
     dev.off()
   }
@@ -123,7 +123,7 @@ FilterByTPM <- function(plots=T,inputPath,outputPath,percentile){
   PrePostFilt_Transcript_Brain <- rbind(data.frame(Counts=as.vector(TPM_WholeBrain_Transcript_Prefilt)) %>% mutate(Dataset = 'Brain',Filt='Prefilt'),
                                         data.frame(Counts=as.vector(TPM_WholeBrain_Transcript)) %>% mutate(Dataset = 'Brain',Filt='Postfilt'))
   if(plots){
-      tiff(height=600,width=1200,filename = '../Figures/TPM_Comparison/PrePostTPMFiltering_WholeBrainTPM.tiff')
+      tiff(height=600,width=1200,filename = '../../Figures/TPM_Comparison/PrePostTPMFiltering_WholeBrainTPM.tiff')
       ggarrange(ggplot(PrePostFilt_Gene_Brain, aes(x=Dataset, y=Counts, fill=as.factor(Filt))) + 
                 geom_boxplot(outlier.shape = NA) + 
                 scale_x_discrete(name = "Dataset") +
@@ -140,9 +140,9 @@ FilterByTPM <- function(plots=T,inputPath,outputPath,percentile){
   save(TPM_WholeBrain_Gene,file=paste0(outputPath,'/TPM_WholeBrain_Gene.rda'))
   save(TPM_WholeBrain_Transcript,file= paste0(outputPath,'/TPM_WholeBrain_Transcript.rda'))
 
-  #save(list = ls(environment()),file=paste0('../CodeImages/TPMFiltering_',as.character(percentile),'.RData'))
+  #save(list = ls(environment()),file=paste0('../../CodeImages/TPMFiltering_',as.character(percentile),'.RData'))
 }
-#FilterByTPM(plots = F,inputPath = '../Count_Data/Read_Filtered/',outputPath = '../Count_Data/TPM_Filtered/',percentile=0.75)
+#FilterByTPM(plots = F,inputPath = '../../Count_Data/Read_Filtered/',outputPath = '../../Count_Data/TPM_Filtered/',percentile=0.75)
 
 
 

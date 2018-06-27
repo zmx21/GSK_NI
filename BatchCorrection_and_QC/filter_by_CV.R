@@ -51,7 +51,7 @@ FilterByCV <- function(plots=F,inputPath,outputPath,percentile){
       return(dens$z[ii])
     }
     #TPM and CV, gene level for microglia comparing biotype
-    tiff(filename = '../Figures/CV_Filtering/Microglia_TPMVSCV_Biotype.tiff',width = 1200,height=800)
+    tiff(filename = '../../Figures/CV_Filtering/Microglia_TPMVSCV_Biotype.tiff',width = 1200,height=800)
     DfGene  <- rbind(data.frame(mean = apply(microgliaGene$coding,1,function(x) mean(x)),
                             cv = apply(microgliaGene$coding,1,function(x) sd(x)/mean(x)),
                             biotype = rep('Coding',nrow(microgliaGene$coding))),
@@ -98,7 +98,7 @@ FilterByCV <- function(plots=F,inputPath,outputPath,percentile){
     dev.off()
     
     #Distribution of Microglia CV, according to Biotype
-    tiff(filename = '../Figures/CV_Filtering/MicrgoliaCVDist.tiff',width = 1200,height=800)
+    tiff(filename = '../../Figures/CV_Filtering/MicrgoliaCVDist.tiff',width = 1200,height=800)
     par(mfrow=c(2,2))
     hist(CalcCV(microgliaGene$coding),breaks=100,main='CV Gene Micrgolia - Coding',xlab='CV')
     lines(rep(quantile(CalcCV(microgliaGene$coding),percentile),2),y=c(0,100000),col='red',lwd=3)
@@ -111,7 +111,7 @@ FilterByCV <- function(plots=F,inputPath,outputPath,percentile){
     dev.off()
     
     #Distribution of Brain CV, according to Biotype
-    tiff(filename = '../Figures/CV_Filtering/BrainCVDist.tiff',width = 1200,height=800)
+    tiff(filename = '../../Figures/CV_Filtering/BrainCVDist.tiff',width = 1200,height=800)
     par(mfrow=c(2,2))
     hist(CalcCV(brainGene$coding),breaks=100,main='CV Gene Micrgolia - Coding',xlab='CV')
     lines(rep(quantile(CalcCV(brainGene$coding),percentile),2),y=c(0,100000),col='red',lwd=3)
@@ -132,7 +132,7 @@ FilterByCV <- function(plots=F,inputPath,outputPath,percentile){
     Filtering_Biotype_Microglia$Step <- c('Gene - Pre Filt','Gene - Post Filt','Transcript - Pre Filt','Transcript Post Filt')
     Filtering_Biotype_Microglia <- Filtering_Biotype_Microglia[,c(6,1,2,3,4,5)]  #Switch column orders
     
-    tiff(height=200,width=500,filename = '../Figures/CV_Filtering/MicrgoliaCVFilteringStats.tiff')
+    tiff(height=200,width=500,filename = '../../Figures/CV_Filtering/MicrgoliaCVFilteringStats.tiff')
     grid.arrange(top='Microglia CV Filtering',tableGrob(Filtering_Biotype_Microglia))
     dev.off()
     
@@ -145,16 +145,16 @@ FilterByCV <- function(plots=F,inputPath,outputPath,percentile){
     Filtering_Biotype_Brain$Step <- c('Gene - Pre Filt','Gene - Post Filt','Transcript - Pre Filt','Transcript Post Filt')
     Filtering_Biotype_Brain <- Filtering_Biotype_Brain[,c(6,1,2,3,4,5)]  #Switch column orders
     
-    tiff(height=200,width=500,filename = '../Figures/CV_Filtering/BrainCVFilteringStats.tiff')
+    tiff(height=200,width=500,filename = '../../Figures/CV_Filtering/BrainCVFilteringStats.tiff')
     grid.arrange(top='Brain CV Filtering',tableGrob(Filtering_Biotype_Brain))
     dev.off()
     
   }
-  save(MicrogliaGeneCVFiltered,file='../Count_Data/CV_Filtered/MicrogliaGeneCVFiltered.rda')
-  save(MicrogliaTranscriptCVFiltered,file='../Count_Data/CV_Filtered/MicrogliaTranscriptCVFiltered.rda')
-  save(BrainGeneCVFiltered,file='../Count_Data/CV_Filtered/BrainGeneCVFiltered.rda')
-  save(BrainTranscriptCVFiltered,file = '../Count_Data/CV_Filtered/BrainTranscriptCVFiltered.rda')
-  save(list = ls(environment()),file='../CodeImages/CVFiltering.RData')
+  save(MicrogliaGeneCVFiltered,file='../../Count_Data/CV_Filtered/MicrogliaGeneCVFiltered.rda')
+  save(MicrogliaTranscriptCVFiltered,file='../../Count_Data/CV_Filtered/MicrogliaTranscriptCVFiltered.rda')
+  save(BrainGeneCVFiltered,file='../../Count_Data/CV_Filtered/BrainGeneCVFiltered.rda')
+  save(BrainTranscriptCVFiltered,file = '../../Count_Data/CV_Filtered/BrainTranscriptCVFiltered.rda')
+  save(list = ls(environment()),file='../../CodeImages/CVFiltering.RData')
 }
-FilterByCV(plots=T,list('../Count_Data/Batch_Corrected/','../Count_Data/TPM_Filtered/'),outputPath = '../Count_Data/CV_Filtered/',0.5)
+FilterByCV(plots=T,list('../../Count_Data/Batch_Corrected/','../../Count_Data/TPM_Filtered/'),outputPath = '../../Count_Data/CV_Filtered/',0.5)
   

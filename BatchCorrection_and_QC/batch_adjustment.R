@@ -125,7 +125,7 @@ RunBatchCorrection <- function(GeneMatrix,TranscriptMatrix,Sample,expType=F,full
     PCA_PreCorrectionPlot <- list(autoplot(PCA_PreCorrection_Gene$PCA,data=PCA_PreCorrection_Gene$Df,colour='batch',size=4,shape=F) + ggtitle('Pre Batch Correction - Gene'),
                                   autoplot(PCA_PreCorrection_Transcript$PCA,data=PCA_PreCorrection_Transcript$Df,colour='batch',size=4,shape=F) + ggtitle('Pre Batch Correction - Transcript'))
     library(egg)
-    tiff(file=paste0('../Figures/Batch_Correction/',figName,'.tiff'),width=800,height=500)
+    tiff(file=paste0('../../Figures/Batch_Correction/',figName,'.tiff'),width=800,height=500)
     ggarrange(plots = c(PCA_PreCorrectionPlot,PCA_PostCorrectionPlot),ncol=2)
     dev.off()
     return(list(PCA_Plots = list(PCA_PreCorrectionPlot,PCA_PostCorrectionPlot),MatrixCorrected=MatrixCorrected))
@@ -136,8 +136,8 @@ RunBatchCorrection <- function(GeneMatrix,TranscriptMatrix,Sample,expType=F,full
 
 RunBatchForAllData <- function(plots){
   source('pca_analysis.R')
-  load('../Count_Data/TPM_Filtered/TPM_Microglia_Gene_Merged.rda')
-  load('../Count_Data/TPM_Filtered/TPM_Microglia_Transcript_Merged.rda')
+  load('../../Count_Data/TPM_Filtered/TPM_Microglia_Gene_Merged.rda')
+  load('../../Count_Data/TPM_Filtered/TPM_Microglia_Transcript_Merged.rda')
   GalatroSamples_Genes <- ExtractDataset(TPM_Microglia_Gene_Merged,'Galatro')
   GosselinSamples_Genes <- ExtractDataset(TPM_Microglia_Gene_Merged,'Gosselin')
   OlahSamples_Genes <- ExtractDataset(TPM_Microglia_Gene_Merged,'Olah')
@@ -173,8 +173,8 @@ RunBatchForAllData <- function(plots){
   #Global batch correction.
   MergedFinalBatchCorrected <- RunBatchCorrection(MergedIndivCorrected$Gene,MergedIndivCorrected$Transcript,c('Galatro','Gosselin','Olah'),expType = F,full = T)
   SalmonTPM_Combat_ExpCorrected <- MergedFinalBatchCorrected$MatrixCorrected
-  save(SalmonTPM_Combat_ExpCorrected,file='../Count_Data/Batch_Corrected/SalmonTPM_Combat_ExpCorrected.rda')
-  #save(list = ls(environment()),file='../CodeImages/BatchCorrection.RData')
+  save(SalmonTPM_Combat_ExpCorrected,file='../../Count_Data/Batch_Corrected/SalmonTPM_Combat_ExpCorrected.rda')
+  #save(list = ls(environment()),file='../../CodeImages/BatchCorrection.RData')
   
 }
 

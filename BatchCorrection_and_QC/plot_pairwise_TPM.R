@@ -29,8 +29,8 @@ PlotPairWiseTPM <- function(params,xsuffix,ysuffix){
   return(PlotObj)
 }
 SavePairwiseTPMPlots <- function(){
-  load('../CodeImages/TPMFiltering_0.75.RData')
-  load('../Count_Data/Batch_Corrected/SalmonTPM_Combat_ExpCorrected.rda')
+  load('../../CodeImages/TPMFiltering_0.75.RData')
+  load('../../Count_Data/Batch_Corrected/SalmonTPM_Combat_ExpCorrected.rda')
   library(ggplot2)
   library(devtools)
   source_gist("524eade46135f6348140",filename = "ggplot_smooth_func.R")
@@ -55,7 +55,7 @@ SavePairwiseTPMPlots <- function(){
                              list(dat1=log2(OlahSamples_Transcripts[rownames(FinalOlahCorrected_Transcripts),]+1),dat2=FinalOlahCorrected_Transcripts,sample=c('Olah Raw','Olah Corrected'),titlePre = 'Transcript-\n'))
   
   WithinSamplePlots <- lapply(WithinSamplePairs,function(x) PlotPairWiseTPM(x,xsuffix='log(TPM+1)',ysuffix='Abundance'))
-  tiff(filename = '../Figures/WithinSample_TPM.tiff',width = 1000,height = 550)
+  tiff(filename = '../../Figures/WithinSample_TPM.tiff',width = 1000,height = 550)
   egg::ggarrange(plots=WithinSamplePlots,ncol=3)
   dev.off()
   
@@ -68,7 +68,7 @@ SavePairwiseTPMPlots <- function(){
                                 list(dat1=log2(GalatroSamples_Genes+1),dat2=log2(OlahSamples_Genes+1),sample=c('Galatro','Olah'),titlePre = 'Pre Correction Gene-\n'),
                                 list(dat1=log2(GosselinSamples_Genes+1),dat2=log2(OlahSamples_Genes+1),sample=c('Gosselin','Olah'),titlePre = 'Pre Correction Gene-\n'))
   UnCorrectedPlots_Gene <- lapply(UnCorrectedPairs_Gene,function(x) PlotPairWiseTPM(x,xsuffix='log(TPM+1)',ysuffix='log(TPM+1)'))
-  tiff(filename = '../Figures/InterSample_Gene_TPM.tiff',width = 1000,height = 550)
+  tiff(filename = '../../Figures/InterSample_Gene_TPM.tiff',width = 1000,height = 550)
   egg::ggarrange(plots=c(UnCorrectedPlots_Gene,BatchCorrectedPlots_Gene),ncol=3)
   dev.off()
   
@@ -81,7 +81,7 @@ SavePairwiseTPMPlots <- function(){
                                        list(dat1=log2(GalatroSamples_Transcripts+1),dat2=log2(OlahSamples_Transcripts+1),sample=c('Galatro','Olah'),titlePre = 'Pre Correction Transcript-\n'),
                                        list(dat1=log2(GosselinSamples_Transcripts+1),dat2=log2(OlahSamples_Transcripts+1),sample=c('Gosselin','Olah'),titlePre = 'Pre Correction Transcript-\n'))
   UnCorrectedPlots_Transcripts <- lapply(UnCorrectedPairs_Transcripts,function(x) PlotPairWiseTPM(x,xsuffix='log(TPM+1)',ysuffix='log(TPM+1)'))
-  tiff(filename = '../Figures/InterSample_Transcript_TPM.tiff',width = 1000,height = 550)
+  tiff(filename = '../../Figures/InterSample_Transcript_TPM.tiff',width = 1000,height = 550)
   egg::ggarrange(plots=c(UnCorrectedPlots_Transcripts,BatchCorrectedPlots_Transcripts),ncol=3)
   dev.off()
   
@@ -99,9 +99,9 @@ SavePairwiseTPMPlots <- function(){
                           list(dat1=log2(TPM_WholeBrain_Transcript[intersect(rownames(TPM_WholeBrain_Transcript),rownames(OlahSamples_Transcripts)),]+1),
                                dat2=OlahSamples_Transcripts[intersect(rownames(TPM_WholeBrain_Transcript),rownames(OlahSamples_Transcripts)),],sample=c('Brain','Olah Corrected'),titlePre = 'Transcript-\n'))
   BrainComparisonPlots <- lapply(BrainComparison,function(x) PlotPairWiseTPM(x,xsuffix='log(TPM+1)',ysuffix='log(TPM+1)'))
-  tiff(filename = '../Figures/MicrogliaVSBrain_TPM.tiff',width = 1000,height = 550)
+  tiff(filename = '../../Figures/MicrogliaVSBrain_TPM.tiff',width = 1000,height = 550)
   egg::ggarrange(plots=BrainComparisonPlots,ncol=3)
   dev.off()
-  save(list = ls(environment()),file='../CodeImages/PairWisePlots.RData')
+  save(list = ls(environment()),file='../../CodeImages/PairWisePlots.RData')
   
 }

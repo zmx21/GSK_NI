@@ -82,7 +82,7 @@ ParseBiotypeTable <- function(categoricalCounts){
 
 #Return Categorical counts from a list of genes/transcripts
 ExtractBioType <- function(countMatrixInput,table=T){
-  load('../Count_Data/gtfTables.rda')
+  load('../../Count_Data/gtfTables.rda')
   type <- ifelse(grepl('ENST',rownames(countMatrixInput)[1]),'transcript_id','gene_id')
   allNames <- data.frame(ids = rownames(countMatrixInput),stringsAsFactors = F)
   colnames(allNames) <- type
@@ -97,7 +97,7 @@ ExtractBioType <- function(countMatrixInput,table=T){
 }
 #Return detailed Categorical counts from a list of genes/transcripts
 ExtactDetailedBioType <- function(countMatrixInput,table=T){
-  load('../Count_Data/gtfTables.rda')
+  load('../../Count_Data/gtfTables.rda')
   type <- ifelse(grepl('ENST',rownames(countMatrixInput)[1]),'transcript_id','gene_id')
   allNames <- data.frame(ids = rownames(countMatrixInput),stringsAsFactors = F)
   colnames(allNames) <- type
