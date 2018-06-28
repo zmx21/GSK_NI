@@ -51,54 +51,103 @@ FilterByCV <- function(plots=F,inputPath,outputPath,percentile){
       return(dens$z[ii])
     }
     #TPM and CV, gene level for microglia comparing biotype
-    tiff(filename = '../../Figures/CV_Filtering/Microglia_TPMVSCV_Biotype.tiff',width = 1200,height=800)
-    DfGene  <- rbind(data.frame(mean = apply(microgliaGene$coding,1,function(x) mean(x)),
+    tiff(filename = '../../Figures/CV_Filtering/Microglia_TPMVSCV_Biotype.tiff',width = 1200/2,height=800/2)
+    DfGene  <- rbind(data.frame(median = apply(microgliaGene$coding,1,function(x) median(x)),
                             cv = apply(microgliaGene$coding,1,function(x) sd(x)/mean(x)),
                             biotype = rep('Coding',nrow(microgliaGene$coding))),
-    data.frame(mean = apply(microgliaGene$noncoding,1,function(x) mean(x)), 
+    data.frame(median = apply(microgliaGene$noncoding,1,function(x) median(x)), 
                             cv = apply(microgliaGene$noncoding,1,function(x) sd(x)/mean(x)),
                             biotype = rep('Non-Coding',nrow(microgliaGene$noncoding))))
     
-    DfTranscript  <- rbind(data.frame(mean = apply(microgliaTranscript$coding,1,function(x) mean(x)),
+    DfTranscript  <- rbind(data.frame(median = apply(microgliaTranscript$coding,1,function(x) median(x)),
                                 cv = apply(microgliaTranscript$coding,1,function(x) sd(x)/mean(x)),
                                 biotype = rep('Coding',nrow(microgliaTranscript$coding))),
-                     data.frame(mean = apply(microgliaTranscript$noncoding,1,function(x) mean(x)), 
+                     data.frame(median = apply(microgliaTranscript$noncoding,1,function(x) median(x)), 
                                 cv = apply(microgliaTranscript$noncoding,1,function(x) sd(x)/mean(x)),
                                 biotype = rep('Non-Coding',nrow(microgliaTranscript$noncoding))))
     
     
     DfGeneCoding <- filter(DfGene,biotype=='Coding') %>% dplyr::select(-biotype)
     DfGeneNonCoding <- filter(DfGene,biotype=='Non-Coding')%>% dplyr::select(-biotype)
-    DfGeneCoding$density <- get_density(DfGeneCoding$mean,DfGeneCoding$cv)
-    DfGeneNonCoding$density <- get_density(DfGeneNonCoding$mean,DfGeneNonCoding$cv)
+    DfGeneCoding$density <- get_density(DfGeneCoding$median,DfGeneCoding$cv)
+    DfGeneNonCoding$density <- get_density(DfGeneNonCoding$median,DfGeneNonCoding$cv)
     DfTranscriptCoding <- filter(DfTranscript,biotype=='Coding') %>% dplyr::select(-biotype)
     DfTranscriptNonCoding <- filter(DfTranscript,biotype=='Non-Coding')%>% dplyr::select(-biotype)
-    DfTranscriptCoding$density <- get_density(DfTranscriptCoding$mean,DfTranscriptCoding$cv)
-    DfTranscriptNonCoding$density <- get_density(DfTranscriptNonCoding$mean,DfTranscriptNonCoding$cv)
+    DfTranscriptCoding$density <- get_density(DfTranscriptCoding$median,DfTranscriptCoding$cv)
+    DfTranscriptNonCoding$density <- get_density(DfTranscriptNonCoding$median,DfTranscriptNonCoding$cv)
     
     
-    p1 <- ggplot(DfGeneCoding) + aes(x=mean,y = cv,colour=density) + geom_point(size=0.5) + 
-      labs(x='Mean TPM',y='CV') + ggtitle('Coding Genes Microglia - mean TPM vs CV') + 
-      theme_bw() + ylim(c(0,max(DfGeneNonCoding$cv))) + xlim(c(0,max(DfGeneCoding$mean)))
+    p1 <- ggplot(DfGeneCoding) + aes(x=median,y = cv,colour=density) + geom_point(size=0.5) + 
+      labs(x='Median Corrected Abundance',y='CV') + ggtitle('Coding Genes Microglia - \n Median Corrected Abundance vs CV') + 
+      theme_bw() + ylim(c(0,max(DfGeneNonCoding$cv))) + xlim(c(0,max(DfGeneCoding$median)))
     
     
-    p2 <- ggplot(DfGeneNonCoding) + aes(x=mean,y=cv,colour=density) + geom_point(size=0.5) +
-      labs(x='Mean TPM',y='CV') + ggtitle('Noncoding Genes Microglia - mean TPM vs CV') + 
-      theme_bw() + ylim(c(0,max(DfGeneNonCoding$cv))) + xlim(c(0,max(DfGeneCoding$mean)))
+    p2 <- ggplot(DfGeneNonCoding) + aes(x=median,y=cv,colour=density) + geom_point(size=0.5) +
+      labs(x='Median Corrected Abundance',y='CV') + ggtitle('Noncoding Genes Microglia - \n Median Corrected Abundance vs CV') + 
+      theme_bw() + ylim(c(0,max(DfGeneNonCoding$cv))) + xlim(c(0,max(DfGeneCoding$median)))
     
-    p3 <- ggplot(DfTranscriptCoding) + aes(x=mean,y = cv,colour=density) + geom_point(size=0.5) + 
-      labs(x='Mean TPM',y='CV') + ggtitle('Coding Transcript Microglia - mean TPM vs CV') + 
-      theme_bw() + ylim(c(0,max(DfTranscriptNonCoding$cv))) + xlim(c(0,max(DfTranscriptCoding$mean)))
+    p3 <- ggplot(DfTranscriptCoding) + aes(x=median,y = cv,colour=density) + geom_point(size=0.5) + 
+      labs(x='Median Corrected Abundance',y='CV') + ggtitle('Coding Transcript Microglia - \n Median Corrected Abundance vs CV') + 
+      theme_bw() + ylim(c(0,max(DfTranscriptNonCoding$cv))) + xlim(c(0,max(DfTranscriptCoding$median)))
     
-    p4 <- ggplot(DfTranscriptNonCoding) + aes(x=mean,y=cv,colour=density) + geom_point(size=0.5) +
-      labs(x='Mean TPM',y='CV') + ggtitle('Noncoding Transcript Microglia - mean TPM vs CV') + 
-      theme_bw() + ylim(c(0,max(DfTranscriptNonCoding$cv))) + xlim(c(0,max(DfTranscriptCoding$mean)))
+    p4 <- ggplot(DfTranscriptNonCoding) + aes(x=median,y=cv,colour=density) + geom_point(size=0.5) +
+      labs(x='Median Corrected Abundance',y='CV') + ggtitle('Noncoding Transcript Microglia - \n Median Corrected Abundance vs CV') + 
+      theme_bw() + ylim(c(0,max(DfTranscriptNonCoding$cv))) + xlim(c(0,max(DfTranscriptCoding$median)))
     egg::ggarrange(p1,p2,p3,p4,nrow=2,ncol=2)
     
     dev.off()
     
+    
+    #TPM and CV, gene level for brain comparing biotype
+    tiff(filename = '../../Figures/CV_Filtering/Brain_TPMVSCV_Biotype.tiff',width = 1200/2,height=800/2)
+    DfGene  <- rbind(data.frame(median = apply(brainGene$coding,1,function(x) median(x)),
+                                cv = apply(brainGene$coding,1,function(x) sd(x)/mean(x)),
+                                biotype = rep('Coding',nrow(brainGene$coding))),
+                     data.frame(median = apply(brainGene$noncoding,1,function(x) median(x)), 
+                                cv = apply(brainGene$noncoding,1,function(x) sd(x)/mean(x)),
+                                biotype = rep('Non-Coding',nrow(brainGene$noncoding))))
+    
+    DfTranscript  <- rbind(data.frame(median = apply(brainTranscript$coding,1,function(x) median(x)),
+                                      cv = apply(brainTranscript$coding,1,function(x) sd(x)/mean(x)),
+                                      biotype = rep('Coding',nrow(brainTranscript$coding))),
+                           data.frame(median = apply(brainTranscript$noncoding,1,function(x) median(x)), 
+                                      cv = apply(brainTranscript$noncoding,1,function(x) sd(x)/mean(x)),
+                                      biotype = rep('Non-Coding',nrow(brainTranscript$noncoding))))
+    
+    
+    DfGeneCoding <- filter(DfGene,biotype=='Coding') %>% dplyr::select(-biotype)
+    DfGeneNonCoding <- filter(DfGene,biotype=='Non-Coding')%>% dplyr::select(-biotype)
+    DfGeneCoding$density <- get_density(DfGeneCoding$median,DfGeneCoding$cv)
+    DfGeneNonCoding$density <- get_density(DfGeneNonCoding$median,DfGeneNonCoding$cv)
+    DfTranscriptCoding <- filter(DfTranscript,biotype=='Coding') %>% dplyr::select(-biotype)
+    DfTranscriptNonCoding <- filter(DfTranscript,biotype=='Non-Coding')%>% dplyr::select(-biotype)
+    DfTranscriptCoding$density <- get_density(DfTranscriptCoding$median,DfTranscriptCoding$cv)
+    DfTranscriptNonCoding$density <- get_density(DfTranscriptNonCoding$median,DfTranscriptNonCoding$cv)
+    
+    
+    p1 <- ggplot(DfGeneCoding) + aes(x=median,y = cv,colour=density) + geom_point(size=0.5) + 
+      labs(x='Median log(TPM+1)',y='CV') + ggtitle('Coding Genes Brain - \n Median log(TPM+1) vs CV') + 
+      theme_bw() + ylim(c(0,max(DfGeneNonCoding$cv))) + xlim(c(0,max(DfGeneCoding$median)))
+    
+    
+    p2 <- ggplot(DfGeneNonCoding) + aes(x=median,y=cv,colour=density) + geom_point(size=0.5) +
+      labs(x='Median log(TPM+1)',y='CV') + ggtitle('Noncoding Genes Brain - \n Median log(TPM+1) vs CV') + 
+      theme_bw() + ylim(c(0,max(DfGeneNonCoding$cv))) + xlim(c(0,max(DfGeneCoding$median)))
+    
+    p3 <- ggplot(DfTranscriptCoding) + aes(x=median,y = cv,colour=density) + geom_point(size=0.5) + 
+      labs(x='Median log(TPM+1)',y='CV') + ggtitle('Coding Transcript Brain - \n Median log(TPM+1) vs CV') + 
+      theme_bw() + ylim(c(0,max(DfTranscriptNonCoding$cv))) + xlim(c(0,max(DfTranscriptCoding$median)))
+    
+    p4 <- ggplot(DfTranscriptNonCoding) + aes(x=median,y=cv,colour=density) + geom_point(size=0.5) +
+      labs(x='Median log(TPM+1)',y='CV') + ggtitle('Noncoding Transcript Brain - \n Median log(TPM+1) vs CV') + 
+      theme_bw() + ylim(c(0,max(DfTranscriptNonCoding$cv))) + xlim(c(0,max(DfTranscriptCoding$median)))
+    egg::ggarrange(p1,p2,p3,p4,nrow=2,ncol=2)
+    
+    dev.off()
+    
+    
     #Distribution of Microglia CV, according to Biotype
-    tiff(filename = '../../Figures/CV_Filtering/MicrgoliaCVDist.tiff',width = 1200,height=800)
+    tiff(filename = '../../Figures/CV_Filtering/MicrgoliaCVDist.tiff',width = 1200/2,height=800/2)
     par(mfrow=c(2,2))
     hist(CalcCV(microgliaGene$coding),breaks=100,main='CV Gene Micrgolia - Coding',xlab='CV')
     lines(rep(quantile(CalcCV(microgliaGene$coding),percentile),2),y=c(0,100000),col='red',lwd=3)
@@ -111,15 +160,15 @@ FilterByCV <- function(plots=F,inputPath,outputPath,percentile){
     dev.off()
     
     #Distribution of Brain CV, according to Biotype
-    tiff(filename = '../../Figures/CV_Filtering/BrainCVDist.tiff',width = 1200,height=800)
+    tiff(filename = '../../Figures/CV_Filtering/BrainCVDist.tiff',width = 1200/2,height=800/2)
     par(mfrow=c(2,2))
-    hist(CalcCV(brainGene$coding),breaks=100,main='CV Gene Micrgolia - Coding',xlab='CV')
+    hist(CalcCV(brainGene$coding),breaks=100,main='CV Gene Brain - Coding',xlab='CV')
     lines(rep(quantile(CalcCV(brainGene$coding),percentile),2),y=c(0,100000),col='red',lwd=3)
-    hist(CalcCV(brainTranscript$coding),breaks=100,main='CV Transcript Microglia - Coding',xlab='CV')
+    hist(CalcCV(brainTranscript$coding),breaks=100,main='CV Transcript Brain - Coding',xlab='CV')
     lines(rep(quantile(CalcCV(brainTranscript$coding),percentile),2),y=c(0,100000),col='red',lwd=3)
-    hist(CalcCV(brainGene$noncoding),breaks=100,main='CV Gene Micrgolia - Non Coding',xlab='CV')
+    hist(CalcCV(brainGene$noncoding),breaks=100,main='CV Gene Brain - Non Coding',xlab='CV')
     lines(rep(quantile(CalcCV(brainGene$noncoding),percentile),2),y=c(0,100000),col='red',lwd=3)
-    hist(CalcCV(brainTranscript$noncoding),breaks=100,main='CV Transcript Microglia - Non Coding',xlab='CV')
+    hist(CalcCV(brainTranscript$noncoding),breaks=100,main='CV Transcript Brain - Non Coding',xlab='CV')
     lines(rep(quantile(CalcCV(brainTranscript$noncoding),percentile),2),y=c(0,100000),col='red',lwd=3)
     dev.off()
     
