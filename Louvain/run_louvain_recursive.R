@@ -92,6 +92,7 @@ RunLouvainRecursive <- function(initialEdgeListPath,outDirectory){
   numCores = 40
   maxlevels <- 20
   curLevel <- 0
+  minClusterSize <- 3
   #load initialEdgeList into memory, 
   initialEdges <- data.table::fread(initialEdgeListPath,
                                     col.names = c('Node1','Node2','W'),
@@ -121,7 +122,7 @@ RunLouvainRecursive <- function(initialEdgeListPath,outDirectory){
     levelPath <- paste0(outDirectory,'/level_',as.character(curLevel))
     system(paste0('mkdir -p ',levelPath))
     system(paste0('mkdir -p ',levelPath,'/clusters'))
-    curLevelParsedClusters <- StoreClusterResult(clustersList,path = paste0(levelPath,'/clusters/'),minClusterSize = 3,curLevel = curLevel)
+    curLevelParsedClusters <- StoreClusterResult(clustersList,path = paste0(levelPath,'/clusters/'),minClusterSize = minClusterSize,curLevel = curLevel)
     clusterSizes[[curLevel]] <- sapply(curLevelParsedClusters,length)
     
     #Write edge file for next level, according to current level clusters.
