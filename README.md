@@ -17,7 +17,7 @@
 
 #### Louvain: 
 	Scripts for louvain clustering, from correlation network. 
-		- Uses python i-graph package implementation of Louvain [louvain-igraph] (https://github.com/vtraag/louvain-igraph/)
+		- Uses python i-graph package implementation of Louvain (https://github.com/vtraag/louvain-igraph/)
 		- For each round, Louvain is run recursively on every cluster remaining (above minimum cluster size)
 		- The algorithm stops when convergence is reached (ie no clusters are further divided)
 #### PASCAL: 
