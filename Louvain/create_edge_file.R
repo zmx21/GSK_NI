@@ -1,25 +1,31 @@
 CreateEdgeFiles <- function(plots){
+  a <- Sys.time()
   library(Hmisc)
   library(parallel)
   library(plyr)
-  load('../../Count_Data/Correlation_Matrices/MicrogliaGeneAllCorr.rda')
-  load('../../Count_Data/Correlation_Matrices/MicrogliaGeneCodingCorr.rda')
-  
+
   if(!'MicrogliaGeneCodingCorr' %in% ls()){
-    load('../../Count_Data/CV_Filtered/MicrogliaGeneCVFiltered.rda')
-    MicrogliaGeneCodingCorr <- rcorr(t(MicrogliaGeneCVFiltered$coding),type = 'pearson')
+    load('../../Count_Data/Correlation_Matrices/MicrogliaGeneCodingCorr.rda')
+    # load('../../Count_Data/CV_Filtered/MicrogliaGeneCVFiltered.rda')
+    # MicrogliaGeneCodingCorr <- rcorr(t(MicrogliaGeneCVFiltered$coding),type = 'pearson')
   }
   if(!'MicrogliaGeneAllCorr' %in% ls()){
-    MicrogliaGeneAll <- rbind(MicrogliaGeneCVFiltered$coding,MicrogliaGeneCVFiltered$noncoding)
-    MicrogliaGeneAllCorr <- rcorr(t(MicrogliaGeneAll),type = 'pearson')
+    load('../../Count_Data/Correlation_Matrices/MicrogliaGeneAllCorr.rda')
+    
+    # MicrogliaGeneAll <- rbind(MicrogliaGeneCVFiltered$coding,MicrogliaGeneCVFiltered$noncoding)
+    # MicrogliaGeneAllCorr <- rcorr(t(MicrogliaGeneAll),type = 'pearson')
   }
   if(!'BrainGeneCodingCorr' %in% ls()){
-    load('../../Count_Data/CV_Filtered/BrainGeneCVFiltered.rda')
-    BrainGeneCodingCorr <- rcorr(t(BrainGeneCVFiltered$coding),type = 'pearson')
+    load('../../Count_Data/Correlation_Matrices/BrainGeneCodingCorr.rda')
+
+    # load('../../Count_Data/CV_Filtered/BrainGeneCVFiltered.rda')
+    # BrainGeneCodingCorr <- rcorr(t(BrainGeneCVFiltered$coding),type = 'pearson')
   }
   if(!'BrainGeneAllCorr' %in% ls()){
-    BrainGeneAll <- rbind(BrainGeneCVFiltered$coding,BrainGeneCVFiltered$noncoding)
-    BrainGeneAllCorr <- rcorr(t(BrainGeneAll),type = 'pearson')
+    load('../../Count_Data/Correlation_Matrices/BrainGeneAllCorr.rda')
+
+    # BrainGeneAll <- rbind(BrainGeneCVFiltered$coding,BrainGeneCVFiltered$noncoding)
+    # BrainGeneAllCorr <- rcorr(t(BrainGeneAll),type = 'pearson')
   }
   pValCutOff = 0.05
   if(plots){
@@ -42,7 +48,7 @@ CreateEdgeFiles <- function(plots){
     dev.off()
     return()
     
-    #Observe distribution of CV and p-value.
+    #Observe distribution of CV and p-value. Brain
     tiff(filename = '../../Figures/Correlation_Network/Corr_PVal_Dist_Brain.tiff',width = 600,height=400)
     par(mfrow=c(2,2))
     hist(as.vector(BrainGeneCodingCorr$r),xlab='Correlation Coeff',main=paste0('Coding Network -\nCorrelation',' (N=',as.character(length(as.vector(BrainGeneCodingCorr$r))),')'))
@@ -51,7 +57,7 @@ CreateEdgeFiles <- function(plots){
     hist(as.vector(BrainGeneAllCorr$P),xlab='P Value',main=paste0('Coding and Non Coding Network -\nP-Value',' (N=',as.character(length(as.vector(BrainGeneAllCorr$r))),')'))
     dev.off()
     
-    #Distribution of Correlation values, after cutoff
+    #Distribution of Correlation values, after cutoff. Brain
     tiff(filename = '../../Figures/Correlation_Network/Corr_Filtered_Brain.tiff',width = 300,height=400)
     par(mfrow=c(2,1))
     hist(as.vector(BrainGeneCodingCorr$r[which(BrainGeneCodingCorr$P<pValCutOff)]),xlab='Correlation Coeff',
@@ -61,38 +67,30 @@ CreateEdgeFiles <- function(plots){
     dev.off()
     return()
   }
-  #Covert correlation matrix to a 3 columns. 1st and 2nd columns are nodes, and 3rd column is the weight.
-  CodingSignificantIndex <- which(MicrogliaGeneCodingCorr$P < pValCutOff,arr.ind = T,useNames = F)
-  CodingGeneNames <- rownames(MicrogliaGeneCodingCorr$r)
-  codingOutFile <- file('../../Louvain_Edge_List/CodingEdgeList.txt','w')
-  print('writing coding file')
-  for(i in 1:nrow(CodingSignificantIndex)){
-    x <- CodingSignificantIndex[i,]
-    currentRow <- c(x[1],x[2],abs(round(MicrogliaGeneCodingCorr$r[x[1],x[2]],3)))
-    write(currentRow,codingOutFile,append = T,ncolumns = 4)
+  
+  WriteFile <- function(corrList,pValCutOff,path){
+    #Convert correlation matrix to a 3 columns. 1st and 2nd columns are nodes, and 3rd column is the weight.
+    corrList$P[lower.tri(corrList$P,diag = T)] <- Inf #only consider upper diagonal since symmetric
+    significantIndex <- which(corrList$P < pValCutOff,arr.ind = T,useNames = F)
+    geneNames<- rownames(corrList$r)
+    print(paste('writing: ',path))
+    outFile <- file(path,'w')
+    for(i in 1:nrow(significantIndex)){
+      x <- significantIndex[i,]
+      currentRow <- c(geneNames[x[1]],
+                      geneNames[x[2]],
+                      as.character(abs(round(corrList$r[x[1],x[2]],3))))
+      write(currentRow,outFile,append = T,ncolumns = 4)
+    }
+    close.connection(outFile)
   }
-  close.connection(codingOutFile)
-  save(CodingGeneNames,file='../../Louvain_Edge_List/CodingGeneNames.rda')
-
-  #Covert correlation matrix to a 3 columns. 1st and 2nd columns are nodes, and 3rd column is the weight.
-  AllSignificantIndex <- which(MicrogliaGeneAllCorr$P < pValCutOff,arr.ind = T,useNames = F)
-  AllGeneNames <- rownames(MicrogliaGeneAllCorr$r)
-  AllOutFile <- file('../../Louvain_Edge_List/AllEdgeList.txt','w')
-  print('writing all file')
-  for(i in 1:nrow(AllSignificantIndex)){
-    x <- AllSignificantIndex[i,]
-    currentRow <- c(x[1],x[2],abs(round(MicrogliaGeneAllCorr$r[x[1],x[2]],3)))
-    write(currentRow,AllOutFile,append = T,ncolumns = 4)
-  }
-  close.connection(AllOutFile)
-  save(AllGeneNames,file='../../Louvain_Edge_List/AllGeneNames.rda')
-
+  
+  #microglia coding genes
+  WriteFile(MicrogliaGeneCodingCorr,pValCutOff,'../../Louvain_Edge_List/CodingGenesEdgeListMicroglia.txt')
+  print(Sys.time() - a)
+  
+  a <- Sys.time()
+  #microglia all genes
+  WriteFile(MicrogliaGeneAllCorr,pValCutOff,'../../Louvain_Edge_List/AllGenesEdgeListMicroglia.txt')
+  print(Sys.time() -a)
 }
-
-#Filter according to p-value, observe resulting distribution of correlation values.
-# tiff(filename = '../../Figures/Correlation_Network/Corr_PVal_Dist.tiff',width = 600,height=400)
-# par(mfrow=c(1,2))
-# hist(as.vector(MicrogliaGeneCodingCorr$r),main=paste0('Filtered Coding Network -\nCorrelation',' (N=',as.character(length(as.vector(MicrogliaGeneCodingCorr$r))),')'))
-# hist(as.vector(MicrogliaGeneAllCorr$r),main=paste0('Filtered Coding and Non Coding Network -\nCorrelation',' (N=',as.character(length(as.vector(MicrogliaGeneAllCorr$r))),')'))
-#
-# dev.off()

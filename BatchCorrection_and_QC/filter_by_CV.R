@@ -36,8 +36,8 @@ FilterByCV <- function(plots=F,inputPath,outputPath,percentile){
   MicrogliaTranscriptCVFiltered <- lapply(microgliaTranscript,function(x) ApplyCVFilter(x,percentile))
   
   #Apply filter for brain, according to CV above percentile 
-  BrainGeneCVFiltered <- lapply(microgliaGene,function(x) ApplyCVFilter(x,percentile))
-  BrainTranscriptCVFiltered <- lapply(microgliaTranscript,function(x) ApplyCVFilter(x,percentile))
+  BrainGeneCVFiltered <- lapply(brainGene,function(x) ApplyCVFilter(x,percentile))
+  BrainTranscriptCVFiltered <- lapply(brainTranscript,function(x) ApplyCVFilter(x,percentile))
   
   if(plots){
     library(egg)
