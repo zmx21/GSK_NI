@@ -51,9 +51,9 @@ StoreClusterResult <- function(clustersList,path,minClusterSize=3,curLevel){
   
   overCutoffGeneStrListGmt <- lapply(allIndivGeneList[clusterSizes >= minClusterSize],
                                   function(x) paste(x,collapse = "\t"))
-  overCutoffGeneStrListGmt <- lapply(1:length(overCutoffGeneStrList),function(i) paste(
+  overCutoffGeneStrListGmt <- lapply(1:length(overCutoffGeneStrListGmt),function(i) paste(
     paste0('level_',curLevel,'_cluster_',i),
-    clusterSizes[i],
+    (clusterSizes[clusterSizes >= minClusterSize])[i],
     overCutoffGeneStrListGmt[i],sep = "\t"))
   overCutoffGeneStrListGmt <- paste(overCutoffGeneStrListGmt,collapse = "\n")
   #Each line of file is a cluster. First column is name of cluster, second column is description, rest are gene IDS.
@@ -64,7 +64,9 @@ StoreClusterResult <- function(clustersList,path,minClusterSize=3,curLevel){
   #Space seperated file for easy parsing. each line a cluster
   overCutoffGeneStrList <- paste(lapply(allIndivGeneList[clusterSizes >= minClusterSize],
                                   function(x) paste(x,collapse = " ")),collapse = "\n")
-  write(overCutoffGeneStrList,file(paste0(path,'overCutOffClusters.txt'),'w'),ncolumns = 1,append = F)
+  overCutOffFile <- file(paste0(path,'overCutOffClusters.txt'),'w')
+  write(overCutoffGeneStrList,overCutOffFile,ncolumns = 1,append = F)
+  close(overCutOffFile)
   
   
   if(any(clusterSizes < minClusterSize)){
