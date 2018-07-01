@@ -49,11 +49,11 @@ StoreClusterResult <- function(clustersList,path,minClusterSize=3,curLevel,prefi
   #Find number of genes in each cluster
   clusterSizes <- sapply(allIndivGeneList,length)
   
-  overCutoffGeneStrListGmt <- lapply(allIndivGeneList[clusterSizes >= minClusterSize],
+  overCutoffGeneStrListGmt <- lapply(allIndivGeneList[clusterSizes > minClusterSize],
                                   function(x) paste(x,collapse = "\t"))
   overCutoffGeneStrListGmt <- lapply(1:length(overCutoffGeneStrListGmt),function(i) paste(
     paste0(prefix,'_level_',curLevel,'_cluster_',i),
-    (clusterSizes[clusterSizes >= minClusterSize])[i],
+    (clusterSizes[clusterSizes > minClusterSize])[i],
     overCutoffGeneStrListGmt[i],sep = "\t"))
   overCutoffGeneStrListGmt <- paste(overCutoffGeneStrListGmt,collapse = "\n")
   #Each line of file is a cluster. First column is name of cluster, second column is description, rest are gene IDS.
@@ -62,15 +62,15 @@ StoreClusterResult <- function(clustersList,path,minClusterSize=3,curLevel,prefi
   close(overCutOffGmtFile)
   
   #Space seperated file for easy parsing. each line a cluster
-  overCutoffGeneStrList <- paste(lapply(allIndivGeneList[clusterSizes >= minClusterSize],
+  overCutoffGeneStrList <- paste(lapply(allIndivGeneList[clusterSizes > minClusterSize],
                                   function(x) paste(x,collapse = " ")),collapse = "\n")
   overCutOffFile <- file(paste0(path,'overCutOffClusters.txt'),'w')
   write(overCutoffGeneStrList,overCutOffFile,ncolumns = 1,append = F)
   close(overCutOffFile)
   
   
-  if(any(clusterSizes < minClusterSize)){
-    underCutoffGeneStrList <- paste0(lapply(allIndivGeneList[clusterSizes < minClusterSize],
+  if(any(clusterSizes <= minClusterSize)){
+    underCutoffGeneStrList <- paste0(lapply(allIndivGeneList[clusterSizes <= minClusterSize],
                                             function(x) paste(x,collapse = " ")),collapse = "\n")
     underCutOffFile <- file(paste0(path,'underCutOffClusters.txt'),'w')
     write(underCutoffGeneStrList,underCutOffFile,ncolumns = 1,append = F)
@@ -78,20 +78,21 @@ StoreClusterResult <- function(clustersList,path,minClusterSize=3,curLevel,prefi
     
   }
   #Return clusters as a list of character vectors, to be used to construct edge file. 
-  return(allIndivGeneList[clusterSizes >= minClusterSize])
+  return(allIndivGeneList[clusterSizes > minClusterSize])
 }
 
 #Main function, pass in path to edge lists (from corr matrix), and output directory.
 #Prefix will be appended to each cluster name
 RunLouvainRecursive <- function(initialEdgeListPath,outDirectory,prefix=""){
+  print(paste0('writing files to:',outDirectory))
   source('invoke_louvain.R')
   library(parallel)
   library(data.table)
   library(dplyr)
   library(hashmap)
   system(paste0('mkdir -p ',outDirectory))
-  numCores = 1
-  maxlevels <- 20
+  numCores = 20
+  maxlevels <- 50
   curLevel <- 0
   minClusterSize <- 3
   #load initialEdgeList into memory, 
@@ -115,8 +116,8 @@ RunLouvainRecursive <- function(initialEdgeListPath,outDirectory,prefix=""){
     print(paste('Running Level:',curLevel))
     #Run Louvain on all the edge files for current level (writting in prev iteration)
     #Compute in parallel, by invoke number of cores edge to number of edge lists (but less than limit)
-    clustersList <- lapply(allEdgeLists,
-                             function(x) run_louvain(x))
+    clustersList <- mclapply(allEdgeLists,
+                             function(x) run_louvain(x),mc.cores = min(c(numCores,length(allEdgeLists))))
     
     #Clean up edge lists created the previous itertation, but not the original.
     if(curLevel > 1){
@@ -134,9 +135,9 @@ RunLouvainRecursive <- function(initialEdgeListPath,outDirectory,prefix=""){
     
     #Write edge file for next level, according to current level clusters.
     #Only do so if there are clusters left to divide. 
-    #stop if covergence, non of clusters divided form previous iteration.
+    #stop if covergence, less than 5 divided form previous iteration.
     numClusters <- c(numClusters,length(curLevelParsedClusters))
-    if(length(curLevelParsedClusters) == 0 | numClusters[curLevel+1] == numClusters[curLevel]){
+    if(length(curLevelParsedClusters) == 0 | numClusters[curLevel+1] - numClusters[curLevel] < 5){
       return()
     }else{
       system(paste0('mkdir -p ',levelPath,'/edges'))
@@ -152,10 +153,20 @@ RunLouvainRecursive <- function(initialEdgeListPath,outDirectory,prefix=""){
   stats <- list(numClusters[-1],clusterSizes[sapply(clusterSizes,!is.null)])
   save(stats,file=paste0(outDirectory,'/stats.rda'))
 }
-outDirectory <- '/local/data/public/zmx21/zmx21_private/GSK/Louvain_results/CodingMicrogliaGenes'
-initialEdgeListPath <- '/local/data/public/zmx21/zmx21_private/GSK/Louvain_Edge_List/CodingGenesEdgeListMicroglia.txt'
-RunLouvainRecursive(initialEdgeListPath = initialEdgeListPath,outDirectory = outDirectory,prefix = 'coding_microglia_gene')
+# outDirectory <- '/local/data/public/zmx21/zmx21_private/GSK/Louvain_results/CodingMicrogliaGenes'
+# initialEdgeListPath <- '/local/data/public/zmx21/zmx21_private/GSK/Louvain_Edge_List/CodingGenesEdgeListMicroglia.txt'
+# RunLouvainRecursive(initialEdgeListPath = initialEdgeListPath,outDirectory = outDirectory,prefix = 'coding_microglia_genes')
+# 
+# outDirectory <- '/local/data/public/zmx21/zmx21_private/GSK/Louvain_results/AllMicrogliaGenes'
+# initialEdgeListPath <- '/local/data/public/zmx21/zmx21_private/GSK/Louvain_Edge_List/AllGenesEdgeListMicroglia.txt'
+# RunLouvainRecursive(initialEdgeListPath = initialEdgeListPath,outDirectory = outDirectory,prefix = 'all_microglia_genes')
 
-outDirectory <- '/local/data/public/zmx21/zmx21_private/GSK/Louvain_results/AllMicrogliaGene'
-initialEdgeListPath <- '/local/data/public/zmx21/zmx21_private/GSK/Louvain_Edge_List/AllGenesEdgeListMicroglia.txt'
-RunLouvainRecursive(initialEdgeListPath = initialEdgeListPath,outDirectory = outDirectory,prefix = 'all_microglia_genes')
+# outDirectory <- '/local/data/public/zmx21/zmx21_private/GSK/Louvain_results/CodingMicrogliaTranscripts'
+# initialEdgeListPath <- '/local/data/public/zmx21/zmx21_private/GSK/Louvain_Edge_List/CodingTranscriptsEdgeListMicroglia.txt'
+# RunLouvainRecursive(initialEdgeListPath = initialEdgeListPath,outDirectory = outDirectory,prefix = 'coding_microglia_transcripts')
+
+outDirectory <- '/local/data/public/zmx21/zmx21_private/GSK/Louvain_results/AllMicrogliaTranscripts/'
+initialEdgeListPath <- '/local/data/public/zmx21/zmx21_private/GSK/Louvain_Edge_List/AllTranscriptsEdgeListMicroglia.txt'
+RunLouvainRecursive(initialEdgeListPath = initialEdgeListPath,outDirectory = outDirectory,prefix = 'all_microglia_transcripts')
+
+

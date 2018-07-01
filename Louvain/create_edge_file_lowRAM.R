@@ -22,7 +22,7 @@ WriteEdgeList <- function(expMatrix,pValCutOff,path){
     weightVal <- ifelse(cor.p.values(corResult,numSamples) < pValCutOff,round(abs(corResult),3),c(NA))
     return(weightVal)
   }
-  for(j in seq(1,numGenes,by=1)){
+  for(j in seq(1,numGenes-1,by=1)){
     currentRows <- seq(j+1,numGenes,1)
     correlationResults <- unlist(mclapply(currentRows,function(i) RunCorrelationForPair(expMatrix,pValCutOff,i,j,numSamples),mc.cores = numCores))
     overCutOffRows <- is.na(correlationResults)
