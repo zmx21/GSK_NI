@@ -26,27 +26,32 @@ GetClustersAnnotation <- function(JoinedDfMicroglia,geneIdToName,librariesToRun)
   clusterResults <- vector(mode = 'list',length = length(uniqueStudies))
   names(clusterResults) <- uniqueStudies
   for(i in 1:length(uniqueStudies)){
+    print(uniqueStudies[i])
     #Get all clusters, coding and all, as level
     currentStudyDf <- JoinedDfMicroglia %>% dplyr::filter(StudyName==uniqueStudies[i])
     #Remove duplicated clusters
     currentStudyDf <- currentStudyDf %>% distinct(chi2Pvalue,Size,Biotype,.keep_all = T)
     #Arrange by increasing p value
     currentStudyDf <- currentStudyDf %>% dplyr::arrange(adjPvalue)
-    #Take top 20 ranked clusters. 
+    #Take top 10 ranked clusters. 
     topClusters <- currentStudyDf[1:floor(0.10*nrow(currentStudyDf)),]
     allGenes <- lapply(topClusters$Genes,function(x) geneIdToName[[x]])
     #Run enrichR for each cluster
-    enrichrResults <- mclapply(allGenes,function(x) GetSingleClusterAnnotation(genes = x,
-                                                                            librariesToRun = librariesToRun),mc.cores = 20)
+    enrichrResults <- lapply(allGenes,function(x) GetSingleClusterAnnotation(genes = x,
+                                                                            librariesToRun = librariesToRun))
     names(enrichrResults) <- topClusters$Name
     #Keep the top ranking term, p value, overlap and genes for the cluster.
     topForEachCluster <- do.call(rbind,lapply(enrichrResults,function(x) GetTopTermsForEachLib(x)))
-    clusterResults[[i]] <- list(df=cbind(topClusters,topForEachCluster),enrichrResult=enrichrResults)
+    currentStudyResult <- list(df=cbind(topClusters,topForEachCluster),enrichrResult=enrichrResults)
+    save(currentStudyResult,file=paste0('../../GWAS/PASCAL_results/microglia_gene/ClusterAnnot_',uniqueStudies[i],'.rda'))
+    clusterResults[[i]] <- currentStudyResult
   }  
 }
 library(enrichR)
 library(hashmap)
 load('../../Count_Data/geneGtfTableFull.rda')
+load('../../Count_Data/JoinedDfMicroglia.rda')
+JoinedDfMicroglia <- JoinedDfMicroglia %>% dplyr::filter(Biotype=='coding' & Level < 10) %>% dplyr::arrange(adjPvalue)
 geneGtfTableFull <- geneGtfTableFull %>% dplyr::select(gene_name,gene_id)
 geneIdToName <- hashmap::hashmap(keys = geneGtfTableFull$gene_id,values = geneGtfTableFull$gene_name)
 
@@ -79,3 +84,4 @@ geneIdToName <- hashmap::hashmap(keys = geneGtfTableFull$gene_id,values = geneGt
 
 librariesToRun <- c('KEGG_2016','TRANSFAC_and_JASPAR_PWMs','Jensen_DISEASES')
 ClusterAnnotResults <- GetClustersAnnotation(JoinedDfMicroglia,geneIdToName,librariesToRun)
+save(ClusterAnnotResults,file='../../GWAS/PASCAL_results/microglia_gene/ClusterAnnot.rda')
