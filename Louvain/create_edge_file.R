@@ -6,25 +6,25 @@ CreateEdgeFiles <- function(plots){
 
   if(!'MicrogliaGeneCodingCorr' %in% ls()){
     # load('../../Count_Data/Correlation_Matrices/MicrogliaGeneCodingCorr.rda')
-    # load('../../Count_Data/CV_Filtered/MicrogliaGeneCVFiltered.rda')
-    # MicrogliaGeneCodingCorr <- rcorr(t(MicrogliaGeneCVFiltered$coding),type = 'pearson')
+    load('../../Count_Data/CV_Filtered_25/MicrogliaGeneCVFiltered.rda')
+    MicrogliaGeneCodingCorr <- rcorr(t(MicrogliaGeneCVFiltered$coding),type = 'pearson')
   }
   if(!'MicrogliaGeneAllCorr' %in% ls()){
     # load('../../Count_Data/Correlation_Matrices/MicrogliaGeneAllCorr.rda')
     
-    # MicrogliaGeneAll <- rbind(MicrogliaGeneCVFiltered$coding,MicrogliaGeneCVFiltered$noncoding)
-    # MicrogliaGeneAllCorr <- rcorr(t(MicrogliaGeneAll),type = 'pearson')
+    MicrogliaGeneAll <- rbind(MicrogliaGeneCVFiltered$coding,MicrogliaGeneCVFiltered$noncoding)
+    MicrogliaGeneAllCorr <- rcorr(t(MicrogliaGeneAll),type = 'pearson')
   }
   if(!'RandomMicrogliaGeneCodingCorr' %in% ls()){
     #For random test, shuffle node labels while keeping the same network. 
-    load('../../Count_Data/CV_Filtered/MicrogliaGeneCVFiltered.rda')
-    set.seed(199)
-    permutation <- sample(1:nrow(MicrogliaGeneCVFiltered$coding),size = nrow(MicrogliaGeneCVFiltered$coding),replace = F)
-    RandomMicrogliaGeneCodingCorr <- rcorr(t(MicrogliaGeneCVFiltered$coding),type = 'pearson')
-    colnames(RandomMicrogliaGeneCodingCorr$P) <- colnames(RandomMicrogliaGeneCodingCorr$P)[permutation]
-    colnames(RandomMicrogliaGeneCodingCorr$r) <- colnames(RandomMicrogliaGeneCodingCorr$r)[permutation]
-    rownames(RandomMicrogliaGeneCodingCorr$P) <- rownames(RandomMicrogliaGeneCodingCorr$P)[permutation]
-    rownames(RandomMicrogliaGeneCodingCorr$r) <- rownames(RandomMicrogliaGeneCodingCorr$r)[permutation]
+    # load('../../Count_Data/CV_Filtered/MicrogliaGeneCVFiltered.rda')
+    # set.seed(199)
+    # permutation <- sample(1:nrow(MicrogliaGeneCVFiltered$coding),size = nrow(MicrogliaGeneCVFiltered$coding),replace = F)
+    # RandomMicrogliaGeneCodingCorr <- rcorr(t(MicrogliaGeneCVFiltered$coding),type = 'pearson')
+    # colnames(RandomMicrogliaGeneCodingCorr$P) <- colnames(RandomMicrogliaGeneCodingCorr$P)[permutation]
+    # colnames(RandomMicrogliaGeneCodingCorr$r) <- colnames(RandomMicrogliaGeneCodingCorr$r)[permutation]
+    # rownames(RandomMicrogliaGeneCodingCorr$P) <- rownames(RandomMicrogliaGeneCodingCorr$P)[permutation]
+    # rownames(RandomMicrogliaGeneCodingCorr$r) <- rownames(RandomMicrogliaGeneCodingCorr$r)[permutation]
   }
   if(!'BrainGeneCodingCorr' %in% ls()){
     # load('../../Count_Data/Correlation_Matrices/BrainGeneCodingCorr.rda')
@@ -97,13 +97,13 @@ CreateEdgeFiles <- function(plots){
   }
   
   #microglia coding genes
-  # WriteFile(MicrogliaGeneCodingCorr,pValCutOff,'../../Louvain_Edge_List/CodingGenesEdgeListMicroglia.txt')
-  # print(Sys.time() - a)
+  WriteFile(MicrogliaGeneCodingCorr,pValCutOff,'../../Louvain_Edge_List/CodingGenesEdgeListMicroglia.txt')
+  print(Sys.time() - a)
   
   #microglia all genes
-  # WriteFile(MicrogliaGeneAllCorr,pValCutOff,'../../Louvain_Edge_List/AllGenesEdgeListMicroglia.txt')
-  # print(Sys.time() -a)
+  WriteFile(MicrogliaGeneAllCorr,pValCutOff,'../../Louvain_Edge_List/AllGenesEdgeListMicroglia.txt')
+  print(Sys.time() -a)
   
   #Randomly permuted microglia coding genes. 
-  WriteFile(RandomMicrogliaGeneCodingCorr,pValCutOff,'../../Louvain_Edge_List/RandomCodingGenesEdgeListMicroglia.txt')
+  # WriteFile(RandomMicrogliaGeneCodingCorr,pValCutOff,'../../Louvain_Edge_List/RandomCodingGenesEdgeListMicroglia.txt')
 }

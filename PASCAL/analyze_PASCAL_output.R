@@ -1,6 +1,7 @@
 library(qusage)
 library(dplyr)
-
+library(ggplot2)
+library(parallel)
 #Merged result from PASCAL with cluster info
 ParsePASCALFile <- function(resultPaths,clusterPaths){
   #Load all PASCAL results
@@ -41,71 +42,120 @@ GetPathToPASCALResults <- function(PASCALResultPath){
   return(allStudiesPath)
 }
 
-allStudiesMicrogliaPath <- GetPathToPASCALResults('../../GWAS/PASCAL_results/microglia_gene/')
-JoinedDfMicroglia <- ParsePASCALFile(allStudiesMicrogliaPath,'../../Louvain_results/microglia_gene_clusters.gmt')
-library(egg)
-
-#plot number of clusters at different levels.
-levelVSNumber <- JoinedDfMicroglia %>% dplyr::filter(StudyName=='AB42_Deming')%>% dplyr::select(Level,Biotype)
-tiff('../../Figures/PASCAL/NumOfClustersVSLevel.tiff',width = 1200,height = 500)
-p1 <- ggplot(levelVSNumber) + aes(fill=factor(Biotype),x=factor(Level)) + geom_bar(position = 'dodge') + 
-  scale_y_continuous(breaks = round(seq(0, 1700, by = 100),1),limits = c(0,1650)) + labs(y='Number of Clusters',x='Louvain Recursion Level',fill='Biotype')
-ggarrange(p1)
-dev.off()
-
-#plot level of clustering vs size of clusters.
-levelvsSize <- JoinedDfMicroglia %>% dplyr::select(Level,Size,Biotype)
-levelvsSize <- levelvsSize[!duplicated(levelvsSize),] 
-p1 <- ggplot(levelvsSize) + aes(x=factor(Level),y=Size,fill=factor(Biotype)) + geom_boxplot(width=0.3,position='dodge') +
+ConstructPlots <- function(){
+  source('pval_correction.R')
+  allStudiesMicrogliaPath <- GetPathToPASCALResults('../../GWAS/PASCAL_results/microglia_gene/')
+  JoinedDfMicroglia <- ParsePASCALFile(allStudiesMicrogliaPath,'../../Louvain_results/microglia_gene_clusters.gmt')
+  JoinedDfMicroglia <- AppendCorrectedPVal(JoinedDfMicroglia)
+  library(egg)
+  
+  #plot number of clusters at different levels.
+  levelVSNumber <- JoinedDfMicroglia %>% dplyr::filter(StudyName=='AB42_Deming')%>% dplyr::select(Level,Biotype)
+  tiff('../../Figures/PASCAL/NumOfClustersVSLevel.tiff',width = 1200,height = 500)
+  p1 <- ggplot(levelVSNumber) + aes(fill=factor(Biotype),x=factor(Level)) + geom_bar(position = 'dodge') + 
+    scale_y_continuous(breaks = round(seq(0, 1700, by = 100),1),limits = c(0,1650)) + labs(y='Number of Clusters',x='Louvain Recursion Level',fill='Biotype')
+  ggarrange(p1)
+  dev.off()
+  
+  #plot level of clustering vs size of clusters.
+  levelvsSize <- JoinedDfMicroglia %>% dplyr::select(Level,Size,Biotype)
+  levelvsSize <- levelvsSize[!duplicated(levelvsSize),] 
+  p1 <- ggplot(levelvsSize) + aes(x=factor(Level),y=Size,fill=factor(Biotype)) + geom_boxplot(width=0.3,position='dodge') +
     scale_y_continuous(breaks = round(seq(0, 600, by = 20),1),limits = c(0,600)) + ggtitle('Distribution of Cluster Sizes at Each Level') + 
-  xlab('Louvain Recursion Level') + ylab('Cluster Size') + labs(fill='Biotype')
-tiff('../../Figures/PASCAL/SizeVSLevel.tiff',width = 1200,height = 500)
-ggarrange(p1)
-dev.off()
-
-#Plot density of P-Value for different Levels
-PlotDensityByLevel <- function(joinedDf,title){
-  return(ggplot(joinedDf,aes(x=-1*log10(empPvalue),fill=factor(Level))) + geom_density(trim=F) + 
-    coord_flip() + 
-    facet_grid(. ~ Level) + 
-    xlim(1,5) + labs(x='-log10(Empirical P-Value)',y='Density',fill='Louvain\nRecursion\nLevel') + ggtitle(title))
-} 
-
-#Look at coding only Microglia distribution across levels, for all studies
-p1 <- PlotDensityByLevel(JoinedDfMicroglia %>% dplyr::filter(Biotype=='coding' & Level >= 3 & Level < 11),title = c('Microglia Coding Genes-\nP-val Density Across Levels for all Studies'))
-#Look at coding and non coding Microglia distribution across levels, for all studies
-p2 <- PlotDensityByLevel(JoinedDfMicroglia %>% dplyr::filter(Biotype=='all' & Level >= 3 & Level < 11),title = c('Microglia All Genes -\nP-val Density Across Levels for all Studies'))
-tiff(filename = '../../Figures/PASCAL/LevelVSPVal.tiff',width = 1200,height = 600)
-ggarrange(p1,p2,nrow=2)
-dev.off()
-
-
-#Plot density for inidividual studies
-library(scales)
-allStudiescoding <- lapply(1:length(unique(JoinedDfMicroglia$StudyName)),function(i) PlotDensityByLevel(JoinedDfMicroglia %>% 
-                           dplyr::filter(Biotype=='coding' & (Level %in% c(4,5,6,7)) & StudyName == unique(JoinedDfMicroglia$StudyName)[i]),
-                         title = paste0('Microglia Coding Genes -\n',unique(JoinedDfMicroglia$StudyName)[i])) + scale_y_continuous(breaks = pretty_breaks(n = 3)))
-tiff(filename = '../../Figures/PASCAL/CodingPValIndivStudies.tiff',width = 1600,height = 600)
-ggarrange(plots = allStudiescoding,ncol = 4,nrow = 2)
-dev.off()
-
-allStudiesallgenes <- lapply(1:length(unique(JoinedDfMicroglia$StudyName)),function(i) PlotDensityByLevel(JoinedDfMicroglia %>% 
-                                                                                                          dplyr::filter(Biotype=='all' & (Level %in% c(4,5,6,7)) & StudyName == unique(JoinedDfMicroglia$StudyName)[i]),
-                                                                                                        title = paste0('Microglia All Genes -\n',unique(JoinedDfMicroglia$StudyName)[i])) + scale_y_continuous(breaks = pretty_breaks(n = 3)))
-tiff(filename = '../../Figures/PASCAL/AllPValIndivStudies.tiff',width = 1600,height = 600)
-ggarrange(plots = allStudiesallgenes,ncol = 4,nrow = 2)
-dev.off()
-
-
-#Plot density vs random cluster
-allStudiesRandomMicrogliaPath <- GetPathToPASCALResults('../../GWAS/PASCAL_results/randommicroglia_gene/')
-JoinedDfMicrogliaRandom <- ParsePASCALFile(allStudiesRandomMicrogliaPath,'../../Louvain_results/randommicroglia_clusters.gmt')
-tiff(filename = '../../Figures/PASCAL/RandomVSTrueNetwork.tiff',width = 1200,height = 400)
-ggplot(rbind(JoinedDfMicrogliaRandom,JoinedDfMicroglia) %>% 
-         dplyr::filter(Biotype!='randomall' & Biotype!='all' & Level > 3) %>% 
-         dplyr::mutate(Type=ifelse(Biotype=='randomcoding','Random','True')), 
-       aes(y=-1*log10(empPvalue),fill=factor(Type),x=factor(Level))) + geom_split_violin() + 
-  ylim(2.3,5) + xlab('Louvain Recursion Level') + ylab('-log10(Empirical P Value)') +
-  labs(fill='Random \n or \nTrue') + ggtitle('Randomly permuted network VS True Network')
-dev.off()
+    xlab('Louvain Recursion Level') + ylab('Cluster Size') + labs(fill='Biotype')
+  tiff('../../Figures/PASCAL/SizeVSLevel.tiff',width = 1200,height = 500)
+  ggarrange(p1)
+  dev.off()
+  
+  #Plot density of P-Value for different Levels
+  PlotDensityByLevel <- function(joinedDf,title,pValType='emp'){
+    if(pValType=='emp'){
+      return(ggplot(joinedDf,aes(x=-1*log10(empPvalue))) + geom_density(trim=T,fill="#4271AE") + 
+               facet_grid(Level ~ Biotype,labeller = labeller(Biotype = as_labeller(c(coding='Coding Genes',all='All Genes')),
+                                                              Level = as_labeller(c(`4`='Level 4',`5`='Level 5',`6`='Level 6',`7`='Level 7',`8`='Level 8',`9`='Level 9',`10`='Level 10')))) + 
+               theme(strip.text = element_text(size=15))+ xlim(1,5) + labs(x='-log10(Empirical P-Value)',y='Density',fill='Louvain\nRecursion\nLevel') + ggtitle(title))
+    }else if (pValType=='fdr'){
+      return(ggplot(joinedDf,aes(x=adjPvalue)) + geom_density(trim=T,fill="#4271AE") + geom_vline(xintercept=0.05,colour='red') +
+               facet_grid(Level ~ Biotype,labeller = labeller(Biotype = as_labeller(c(coding='Coding Genes',all='All Genes')),
+                                                              Level = as_labeller(c(`4`='Level 4',`5`='Level 5',`6`='Level 6',`7`='Level 7',`8`='Level 8',`9`='Level 9',`10`='Level 10')))) + 
+               theme(strip.text = element_text(size=15))+ xlim(0,1) + labs(x='BH Adjusted P-Value',y='Density',fill='Louvain\nRecursion\nLevel') + ggtitle(title))
+      
+    }
+  } 
+  
+  #Look at Microglia distribution across levels, for all studies
+  p1 <- PlotDensityByLevel(JoinedDfMicroglia %>% dplyr::filter(Level >= 4 & Level < 11),
+                           title = c('Microglia Coding Genes-\nP-val Density Across Levels for all Studies'))
+  tiff(filename = '../../Figures/PASCAL/LevelVSPVal.tiff',width = 1200,height = 500)
+  ggarrange(p1,nrow=1)
+  dev.off()
+  
+  
+  #Plot density for inidividual studies
+  library(scales)
+  allStudies <- lapply(1:length(unique(JoinedDfMicroglia$StudyName)),function(i) PlotDensityByLevel(JoinedDfMicroglia %>% 
+                                                                                                            dplyr::filter((Level %in% c(4,5,6,7)) & StudyName == unique(JoinedDfMicroglia$StudyName)[i]),
+                                                                                                          title = paste0('Microglia Genes -\n',unique(JoinedDfMicroglia$StudyName)[i])) + scale_y_continuous(breaks = pretty_breaks(n = 3)))
+  tiff(filename = '../../Figures/PASCAL/PValIndivStudies.tiff',width = 1600,height = 600)
+  ggarrange(plots = allStudies,ncol = 4,nrow = 2)
+  dev.off()
+  
+  tiff(filename = '../../Figures/PASCAL/PValAdjIndivStudies.tiff',width = 1600,height = 600)
+  allStudiesFDR <- lapply(1:length(unique(JoinedDfMicroglia$StudyName)),function(i) PlotDensityByLevel(JoinedDfMicroglia %>% 
+                                                                                                      dplyr::filter((Level %in% c(4,5,6,7)) & StudyName == unique(JoinedDfMicroglia$StudyName)[i]),
+                                                                                                    title = paste0('Microglia Genes AdjPVal-\n',unique(JoinedDfMicroglia$StudyName)[i]),pValType = 'fdr') + scale_y_continuous(breaks = pretty_breaks(n = 3)))
+  ggarrange(plots=allStudiesFDR,nrow=2,ncol = 4)
+  dev.off()
+  
+  #Plot density vs random cluster
+  allStudiesRandomMicrogliaPath <- GetPathToPASCALResults('../../GWAS/PASCAL_results/randommicroglia_gene/')
+  JoinedDfMicrogliaRandom <- ParsePASCALFile(allStudiesRandomMicrogliaPath,'../../Louvain_results/randommicroglia_clusters.gmt')
+  JoinedDfMicrogliaRandom <- AppendCorrectedPVal(JoinedDfMicrogliaRandom)
+  source('geom_split_violin.R')
+  tiff(filename = '../../Figures/PASCAL/RandomVSTrueNetwork.tiff',width = 1200,height = 600)
+  ggplot(rbind(JoinedDfMicrogliaRandom,JoinedDfMicroglia) %>% 
+           dplyr::filter(Biotype!='randomall' & Biotype!='all' & Level > 3 & Level <= 7) %>% 
+           dplyr::mutate(Type=ifelse(Biotype=='randomcoding','Random','True')), 
+         aes(x=adjPvalue)) + geom_density(trim=T,fill="#4271AE") + facet_grid(Level ~ Type,labeller = labeller(Type = as_labeller(c(Random='Random Network',True='True Network')),
+                                                                                             Level = as_labeller(c(`4`='Level 4',`5`='Level 5',`6`='Level 6',`7`='Level 7',`8`='Level 8',`9`='Level 9',`10`='Level 10')))) + 
+     xlab('BH Adjusted P-Value') + theme(strip.text = element_text(size=15))+
+    labs(fill='Random \n or \nTrue') + ggtitle('Randomly permuted network VS True Network')
+  dev.off()
+  
+  #Return significant clusters, remove those with exact same genes (chi2PValue) and in the same study with the same biotype
+  SignificantClustersFDR5 <- JoinedDfMicroglia %>% dplyr::filter(adjPvalue<=0.05 & Level > 3) %>% 
+    dplyr::distinct(chi2Pvalue,Size,StudyName,.keep_all=T)
+  SignificantClustersFDR10 <- JoinedDfMicroglia %>% dplyr::filter(adjPvalue<=0.1 & Level > 3) %>% 
+    dplyr::distinct(chi2Pvalue,Size,StudyName,.keep_all=T)
+  
+  #P values against study name
+  
+}
+CompareTrueWithRandom <- function(global=F){
+  source('pval_correction.R')
+  allStudiesMicrogliaPath <- GetPathToPASCALResults('../../GWAS/PASCAL_results/microglia_gene/')
+  JoinedDfMicroglia <- ParsePASCALFile(allStudiesMicrogliaPath,'../../Louvain_results/microglia_gene_clusters.gmt')
+  JoinedDfMicroglia <- AppendCorrectedPVal(JoinedDfMicroglia)
+  allStudiesRandomMicrogliaPath <- GetPathToPASCALResults('../../GWAS/PASCAL_results/randommicroglia_gene/')
+  JoinedDfMicrogliaRandom <- ParsePASCALFile(allStudiesRandomMicrogliaPath,'../../Louvain_results/randommicroglia_clusters.gmt')
+  JoinedDfMicrogliaRandom <- AppendCorrectedPVal(JoinedDfMicrogliaRandom)
+  
+  #Look at different in quantile between random and true network Pval Distribution
+  library(WRS)
+  if(!global){
+    uniqueLevels <- unique(JoinedDfMicrogliaRandom$Level)
+    print('Testing Random VS True')
+    quantileTests <- mclapply(1:length(uniqueLevels),function(i) {
+      curLevel <- JoinedDfMicroglia %>% filter(Level== uniqueLevels[i] & Biotype=='coding');
+      curLevelRandom <- JoinedDfMicrogliaRandom %>% filter(Level==uniqueLevels[i] & Biotype=='randomcoding');
+      qcomhd(curLevel$adjPvalue,curLevelRandom$adjPvalue, q=seq(0.001,0.005,0.001),plotit = F);
+    },mc.cores=length(uniqueLevels))
+    save(quantileTests,file='../../Louvain_results/RandomVsTrue.rda')
+  }else{
+    JoinedDfMicroglia <- JoinedDfMicroglia %>% filter(Biotype=='coding')
+    JoinedDfMicrogliaRandom <- JoinedDfMicrogliaRandom %>% filter(Biotype=='randomcoding')
+    quantileTest <- qcomhd(JoinedDfMicroglia$adjPvalue,JoinedDfMicrogliaRandom$adjPvalue,q=seq(0.001,0.005,0.001))
+    save(quantileTest,file='../../Louvain_results/RandomVsTrueGlobal.rda')
+  }
+}
 

@@ -199,11 +199,11 @@ FilterByCV <- function(plots=F,inputPath,outputPath,percentile){
     dev.off()
     
   }
-  save(MicrogliaGeneCVFiltered,file='../../Count_Data/CV_Filtered/MicrogliaGeneCVFiltered.rda')
-  save(MicrogliaTranscriptCVFiltered,file='../../Count_Data/CV_Filtered/MicrogliaTranscriptCVFiltered.rda')
-  save(BrainGeneCVFiltered,file='../../Count_Data/CV_Filtered/BrainGeneCVFiltered.rda')
-  save(BrainTranscriptCVFiltered,file = '../../Count_Data/CV_Filtered/BrainTranscriptCVFiltered.rda')
+  save(MicrogliaGeneCVFiltered,file=paste0(outputPath,'MicrogliaGeneCVFiltered.rda'))
+  save(MicrogliaTranscriptCVFiltered,file=paste0(outputPath,'MicrogliaTranscriptCVFiltered.rda'))
+  save(BrainGeneCVFiltered,file=paste0(outputPath,'/BrainGeneCVFiltered.rda'))
+  save(BrainTranscriptCVFiltered,file = paste0(outputPath,'/BrainTranscriptCVFiltered.rda'))
   # save(list = ls(environment()),file='../../CodeImages/CVFiltering.RData')
 }
-#FilterByCV(plots=T,list('../../Count_Data/Batch_Corrected/','../../Count_Data/TPM_Filtered/'),outputPath = '../../Count_Data/CV_Filtered/',0.5)
+FilterByCV(plots=F,list('../../Count_Data/Batch_Corrected/','../../Count_Data/TPM_Filtered/'),outputPath = '../../Count_Data/CV_Filtered/',0.5)
   
