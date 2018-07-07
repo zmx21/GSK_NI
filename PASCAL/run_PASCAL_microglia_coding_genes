@@ -1,0 +1,2 @@
+#!/bin/bash
+./Pascal --set="microgliaCodingGenesSettings.txt" --runpathway=on --pval="$1" --genesetfile="resources/genesets/microgliaCodingGenesClusters.gmt" --outdir="../PASCAL_results/microglia_coding_genes/"
