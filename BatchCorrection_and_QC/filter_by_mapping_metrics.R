@@ -4,8 +4,8 @@ FilterAllSamplesByMappingRate <- function(plots=T)
   library(dplyr)
   library(gridExtra)
   source('pca_analysis.R')
-  load(file = '../../Count_Data/gtfTables.rda')
   source('load_GTF.R')
+  gtfTables <- LoadBiotypeMapping(full = T)
   load('../../Count_Data/Galatro/SalmonTPM_Microglia.rda')
   load('../../Count_Data/Gosselin/SalmonTPM_Microglia.rda')
   load('../../Count_Data/Olah/SalmonTPM_Microglia.rda')
@@ -108,9 +108,12 @@ FilterAllSamplesByMappingRate <- function(plots=T)
   TPM_WholeBrain_Gene <- TPM_WholeBrain_Gene[,!colnames(TPM_WholeBrain_Gene)%in% c(BadMappingGalatroBrain)]
   TPM_WholeBrain_Transcript <- TPM_WholeBrain_Transcript[,!colnames(TPM_WholeBrain_Transcript)%in% c(BadMappingGalatroBrain)]
   
-  #Remove rRNA,tRNA,scRMA
-  genesToFilter <- gtfTables$geneTable %>% dplyr::filter(gene_biotype%in%c('rRNA','Mt_rRNA','Mt_tRNA','tRNA','tRNA_pseudogene','scRNA')) %>% dplyr::select(gene_id) %>% t() %>% as.vector()
-  transcriptsToFilter <- gtfTables$transcriptTable %>% dplyr::filter(source%in%c('rRNA','Mt_rRNA','Mt_tRNA','tRNA','tRNA_pseudogene','scRNA')) %>% dplyr::select(transcript_id) %>% t() %>% as.vector()
+  #Remove rRNA,tRNA,scRMA. Only keep autosomal genes. 
+  genesToFilter <- gtfTables$geneTable %>% dplyr::filter(gene_biotype%in%c('rRNA','Mt_rRNA','Mt_tRNA','tRNA','tRNA_pseudogene','scRNA') | 
+                                                           !seqid %in% as.character(seq(1,22,1))) %>% 
+    dplyr::select(gene_id) %>% t() %>% as.vector()
+  transcriptsToFilter <- gtfTables$transcriptTable %>% dplyr::filter(source%in%c('rRNA','Mt_rRNA','Mt_tRNA','tRNA','tRNA_pseudogene','scRNA') | 
+                                                                       !seqid %in% as.character(seq(1,22,1))) %>% dplyr::select(transcript_id) %>% t() %>% as.vector()
   TPM_Microglia_Gene_Merged <- TPM_Microglia_Gene_Merged[!rownames(TPM_Microglia_Gene_Merged)%in%genesToFilter,]
   TPM_Microglia_Transcript_Merged <- TPM_Microglia_Transcript_Merged[!rownames(TPM_Microglia_Transcript_Merged)%in%transcriptsToFilter,]
   TPM_WholeBrain_Gene <- TPM_WholeBrain_Gene[!rownames(TPM_WholeBrain_Gene)%in%genesToFilter,]
@@ -120,7 +123,7 @@ FilterAllSamplesByMappingRate <- function(plots=T)
   save(TPM_Microglia_Gene_Merged,file='../../Count_Data/Read_Filtered/TPM_Microglia_Gene_Merged_ReadFilt.rda')
   save(TPM_Microglia_Transcript_Merged,file='../../Count_Data/Read_Filtered/TPM_Microglia_Transcript_Merged_ReadFilt.rda')
   save(TPM_WholeBrain_Gene,file='../../Count_Data/Read_Filtered/TPM_WholeBrain_Gene.rda')
-  save(TPM_WholeBrain_Transcript,file='../../Count_Data/Read_Filtered/TPM_WholeBrain_Transcript')
-  # save(list = ls(environment()),file='../../CodeImages/MappingFiltering.RData')
+  save(TPM_WholeBrain_Transcript,file='../../Count_Data/Read_Filtered/TPM_WholeBrain_Transcript.rda')
+  save(list = ls(environment()),file='../../CodeImages/MappingFiltering.RData')
   
 }

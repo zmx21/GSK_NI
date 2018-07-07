@@ -34,14 +34,18 @@ GetClustersAnnotation <- function(JoinedDfMicroglia,geneIdToName,librariesToRun)
     #Arrange by increasing p value
     currentStudyDf <- currentStudyDf %>% dplyr::arrange(adjPvalue)
     #Take top 10 ranked clusters. 
-    topClusters <- currentStudyDf[1:floor(0.10*nrow(currentStudyDf)),]
+    topClusters <- currentStudyDf[1:floor(0.1*nrow(currentStudyDf)),]
     allGenes <- lapply(topClusters$Genes,function(x) geneIdToName[[x]])
     #Run enrichR for each cluster
-    enrichrResults <- lapply(allGenes,function(x) GetSingleClusterAnnotation(genes = x,
-                                                                            librariesToRun = librariesToRun))
+    enrichrResults <- vector(mode='list',length = length(allGenes))
+    for(j in 1:length(enrichrResults)){
+      print(j/length(enrichrResults))
+      enrichrResults[[j]] <- GetSingleClusterAnnotation(genes = allGenes[[j]],
+                                                        librariesToRun = librariesToRun)
+    }
     names(enrichrResults) <- topClusters$Name
     #Keep the top ranking term, p value, overlap and genes for the cluster.
-    topForEachCluster <- do.call(rbind,lapply(enrichrResults,function(x) GetTopTermsForEachLib(x)))
+    topForEachCluster <- do.call(rbind.fill,lapply(enrichrResults,function(x) GetTopTermsForEachLib(x)))
     currentStudyResult <- list(df=cbind(topClusters,topForEachCluster),enrichrResult=enrichrResults)
     save(currentStudyResult,file=paste0('../../GWAS/PASCAL_results/microglia_gene/ClusterAnnot_',uniqueStudies[i],'.rda'))
     clusterResults[[i]] <- currentStudyResult
@@ -49,9 +53,12 @@ GetClustersAnnotation <- function(JoinedDfMicroglia,geneIdToName,librariesToRun)
 }
 library(enrichR)
 library(hashmap)
+library(plyr)
+library(dplyr)
 load('../../Count_Data/geneGtfTableFull.rda')
 load('../../Count_Data/JoinedDfMicroglia.rda')
-JoinedDfMicroglia <- JoinedDfMicroglia %>% dplyr::filter(Biotype=='coding' & Level < 10) %>% dplyr::arrange(adjPvalue)
+JoinedDfMicroglia <- JoinedDfMicroglia %>% dplyr::filter(Biotype=='coding' & Level < 10) %>% 
+  dplyr::arrange(adjPvalue)
 geneGtfTableFull <- geneGtfTableFull %>% dplyr::select(gene_name,gene_id)
 geneIdToName <- hashmap::hashmap(keys = geneGtfTableFull$gene_id,values = geneGtfTableFull$gene_name)
 

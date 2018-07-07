@@ -134,7 +134,7 @@ RunBatchCorrection <- function(GeneMatrix,TranscriptMatrix,Sample,expType=F,full
   return(list(MatrixCorrected=MatrixCorrected))
 }
 
-RunBatchForAllData <- function(plots){
+RunBatchForAllData <- function(plots=F){
   source('pca_analysis.R')
   load('../../Count_Data/TPM_Filtered/TPM_Microglia_Gene_Merged.rda')
   load('../../Count_Data/TPM_Filtered/TPM_Microglia_Transcript_Merged.rda')

@@ -203,7 +203,7 @@ FilterByCV <- function(plots=F,inputPath,outputPath,percentile){
   save(MicrogliaTranscriptCVFiltered,file=paste0(outputPath,'MicrogliaTranscriptCVFiltered.rda'))
   save(BrainGeneCVFiltered,file=paste0(outputPath,'/BrainGeneCVFiltered.rda'))
   save(BrainTranscriptCVFiltered,file = paste0(outputPath,'/BrainTranscriptCVFiltered.rda'))
-  # save(list = ls(environment()),file='../../CodeImages/CVFiltering.RData')
+  save(list = ls(environment()),file='../../CodeImages/CVFiltering.RData')
 }
 FilterByCV(plots=F,list('../../Count_Data/Batch_Corrected/','../../Count_Data/TPM_Filtered/'),outputPath = '../../Count_Data/CV_Filtered/',0.5)
   
