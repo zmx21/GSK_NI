@@ -1,5 +1,5 @@
 #Filter GTF such that only genes in our network are considered
-#This is the same approach which the DREAM network consortium used. 
+#This is the same approach which the DREAM network consortium used, such that gene background is not the full genome. 
 library(data.table)
 library(dplyr)
 GTFPath <- '/local/data/public/zmx21/zmx21_private/GSK/GWAS/PASCAL_Ensembl/resources/annotation/'
@@ -11,6 +11,7 @@ GeneID <- sapply(FullGTF$V9,function(x){
   return(geneID)})
 names(GeneID) <- c()
 
+#Load genes which are under consideration.
 load('../../Count_Data/CV_Filtered/MicrogliaGeneCVFiltered.rda')
 microgliaCodingGenesToInclude <- rownames(MicrogliaGeneCVFiltered$coding)
 microgliaAllGenesToInclude <- c(microgliaCodingGenesToInclude,rownames(MicrogliaGeneCVFiltered$noncoding))
