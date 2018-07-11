@@ -49,7 +49,7 @@ WriteHotnetFiles <- function(EntrezEdgeList,GWASDb,path){
   indexEdgeList <- data.frame(GeneA=GeneAIndex,GeneB=GeneBIndex)
   #Mapping between index and gene name (Entrez ID)
   geneList <- data.frame(Index = 1:length(allgenes),Gene = allgenes)
-  #Mapping between each gene, and it's head score (-log(pval))
+  #Mapping between each gene, and it's heat score (-log(pval))
   heatList <- dplyr::left_join(geneList,GWASDb,by=c('Gene'='gene_id')) %>% dplyr::mutate(Heat = -1*log(pvalue), Gene = paste0('ENTREZ:',Gene)) %>% dplyr::select(Gene,Heat)
   geneList <- mutate(geneList,Gene=paste0('ENTREZ:',as.character(Gene)))
   #Write files to the directory.

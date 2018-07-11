@@ -23,7 +23,7 @@ ParsePASCALFile <- function(resultPaths,clusterPaths){
   clustersDf <- data_frame(ClusterName = names(clustersInfo),Genes = clustersInfo)
   
   #Join result and gene info for each cluster. Filter for those with P-values. Then, extract metainfo from cluster Name (level,type)
-  joinedDf <- dplyr::left_join(resultDf,clustersDf,by=c('Name'='ClusterName')) %>% dplyr::filter(!is.na(chi2Pvalue)) %>% 
+  joinedDf <- dplyr::left_join(resultDf,clustersDf,by=c('Name'='ClusterName')) %>% filter(!is.na(chi2Pvalue)) %>%
     dplyr::mutate(Size=sapply(Genes,length)) %>%  #Size info
     dplyr::mutate(Biotype=factor(sapply(Name,function(x) unlist(strsplit(x,'_'))[1])))  %>% #Biotype
     dplyr::mutate(CellType=factor(sapply(Name,function(x) unlist(strsplit(x,'_'))[2])))  %>% #Cell Type
@@ -42,11 +42,8 @@ GetPathToPASCALResults <- function(PASCALResultPath){
   return(allStudiesPath)
 }
 
-ConstructPlots <- function(){
-  source('pval_correction.R')
-  allStudiesMicrogliaPath <- GetPathToPASCALResults('../../GWAS/PASCAL_results/microglia_gene/')
-  JoinedDfMicroglia <- ParsePASCALFile(allStudiesMicrogliaPath,'../../Louvain_results/microglia_gene_clusters.gmt')
-  JoinedDfMicroglia <- AppendCorrectedPVal(JoinedDfMicroglia)
+
+ConstructPlots <- function(JoinedDfMicroglia){
   library(egg)
   
   #plot number of clusters at different levels.
@@ -159,3 +156,31 @@ CompareTrueWithRandom <- function(global=F){
   }
 }
 
+LoadPASCALResults <- function(filter=T){
+  source('pval_correction.R')
+  microgliaAllGenesPath <- GetPathToPASCALResults('../../GWAS/PASCAL_results/microglia_all_genes/')
+  JoinedDfMicroglia <- ParsePASCALFile(microgliaAllGenesPath,'../../Louvain_results/AllMicrogliaGenes/microgliaAllGenesClusters.gmt')
+  microgliaCodingGenesPath <- GetPathToPASCALResults('../../GWAS/PASCAL_results/microglia_coding_genes/')
+  JoinedDfMicroglia <- rbind(JoinedDfMicroglia,ParsePASCALFile(microgliaCodingGenesPath,'../../Louvain_results/CodingMicrogliaGenes/microgliaCodingGenesClusters.gmt'))
+  
+  # JoinedDfMicroglia <- ParsePASCALFile(GetPathToPASCALResults('../../GWAS/PASCAL_results/Old/microglia_gene/'),'../../Louvain_results/Old/microglia_gene_clusters.gmt')
+  JoinedDfMicroglia <- AppendCorrectedPVal(JoinedDfMicroglia)
+  if(filter){
+    #Remove repeating rows
+    JoinedDfMicroglia <- JoinedDfMicroglia %>% dplyr::distinct(StudyName,chi2Pvalue,Size,Biotype,.keep_all=T)
+  }
+  return(JoinedDfMicroglia)
+}
+
+LoadPASCALTranscriptResults <- function(filter=T){
+  source('pval_correction.R')
+  microgliaAllGenesPath <- GetPathToPASCALResults('../../GWAS/PASCAL_results/microglia_coding_transcripts/')
+  JoinedDfMicroglia <- ParsePASCALFile(microgliaAllGenesPath,'../../Louvain_results/CodingMicrogliaTranscripts/CodingMicrogliaTranscriptsAsGenes.gmt')
+
+  JoinedDfMicroglia <- AppendCorrectedPVal(JoinedDfMicroglia)
+  if(filter){
+    #Remove repeating rows
+    JoinedDfMicroglia <- JoinedDfMicroglia %>% dplyr::distinct(StudyName,chi2Pvalue,Size,Biotype,.keep_all=T)
+  }
+  return(JoinedDfMicroglia)
+}

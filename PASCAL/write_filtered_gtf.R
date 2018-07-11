@@ -25,3 +25,33 @@ data.table::fwrite(microgliaCodingGenesGTF,file = paste0(GTFPath,'MicrogliaCodin
 
 data.table::fwrite(microgliaAllGenesGTF,file = paste0(GTFPath,'MicrogliaAllGenes.gtf'),
                    row.names = F,col.names = F,quote = F,sep = '\t')
+
+load('../../Count_Data/CV_Filtered/MicrogliaGeneCVFiltered.rda')
+microgliaCodingGenesToInclude <- rownames(MicrogliaGeneCVFiltered$coding)
+microgliaAllGenesToInclude <- c(microgliaCodingGenesToInclude,rownames(MicrogliaGeneCVFiltered$noncoding))
+
+microgliaCodingGenesGTF <- FullGTF[GeneID %in% microgliaCodingGenesToInclude,]
+microgliaAllGenesGTF <- FullGTF[GeneID %in% microgliaAllGenesToInclude,]
+
+
+data.table::fwrite(microgliaCodingGenesGTF,file = paste0(GTFPath,'MicrogliaCodingGenes_CV25.gtf'),
+                   row.names = F,col.names = F,quote = F,sep = '\t')
+
+data.table::fwrite(microgliaAllGenesGTF,file = paste0(GTFPath,'MicrogliaAllGenes_CV25.gtf'),
+                   row.names = F,col.names = F,quote = F,sep = '\t')
+
+
+microgliaCodingTranscriptsToInclude <- unlist(qusage::read.gmt(
+  '/local/data/public/zmx21/zmx21_private/GSK/Louvain_results/CodingMicrogliaTranscripts/CodingMicrogliaTranscriptsAsGenes.gmt')) %>% unique()
+microgliaCodingTranscriptGTF <- FullGTF[GeneID %in% microgliaCodingTranscriptsToInclude,]
+data.table::fwrite(microgliaCodingTranscriptGTF,file=paste0(GTFPath,'MicrogliaCodingTranscripts.gtf'),
+                   row.names = F,col.names = F,quote = F,sep = '\t')
+
+microgliaAllTranscriptsToInclude <- unlist(qusage::read.gmt(
+  '/local/data/public/zmx21/zmx21_private/GSK/Louvain_results/AllMicrogliaTranscripts/AllMicrogliaTranscriptsAsGenes.gmt')) %>% unique()
+microgliaAllTranscriptGTF <- FullGTF[GeneID %in% microgliaAllTranscriptsToInclude,]
+data.table::fwrite(microgliaAllTranscriptGTF,file=paste0(GTFPath,'MicrogliaAllTranscripts.gtf'),
+                   row.names = F,col.names = F,quote = F,sep = '\t')
+
+
+

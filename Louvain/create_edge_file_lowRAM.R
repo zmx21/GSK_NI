@@ -35,13 +35,13 @@ WriteEdgeList <- function(expMatrix,pValCutOff,path){
 
 pValCutOff = 0.05
 # a <- Sys.time()
-# load('../../Count_Data/CV_Filtered/MicrogliaTranscriptCVFiltered.rda')
+load('../../Count_Data/CV_Filtered/MicrogliaTranscriptCVFiltered.rda')
 # #Microglia coding transcripts
-# WriteEdgeList(MicrogliaTranscriptCVFiltered$coding,pValCutOff,'../../Louvain_Edge_List/CodingTranscriptsEdgeListMicroglia.txt')
-# print(Sys.time() - a)
+WriteEdgeList(MicrogliaTranscriptCVFiltered$coding,pValCutOff,'../../Louvain_Edge_List/CodingTranscriptsEdgeListMicroglia.txt')
+print(Sys.time() - a)
 # 
 # 
 # a <- Sys.time()
 # #Microglia all transcripts
-# WriteEdgeList(rbind(MicrogliaTranscriptCVFiltered$coding,MicrogliaTranscriptCVFiltered$noncoding),pValCutOff,'../../Louvain_Edge_List/AllTranscriptsEdgeListMicroglia.txt')
-# print(Sys.time() - a)
+WriteEdgeList(rbind(MicrogliaTranscriptCVFiltered$coding,MicrogliaTranscriptCVFiltered$noncoding),pValCutOff,'../../Louvain_Edge_List/AllTranscriptsEdgeListMicroglia.txt')
+print(Sys.time() - a)

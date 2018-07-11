@@ -5,13 +5,11 @@ CreateEdgeFiles <- function(plots){
   library(plyr)
 
   if(!'MicrogliaGeneCodingCorr' %in% ls()){
-    # load('../../Count_Data/Correlation_Matrices/MicrogliaGeneCodingCorr.rda')
-    load('../../Count_Data/CV_Filtered_25/MicrogliaGeneCVFiltered.rda')
+    load('../../Count_Data/CV_Filtered/MicrogliaGeneCVFiltered.rda')
     MicrogliaGeneCodingCorr <- rcorr(t(MicrogliaGeneCVFiltered$coding),type = 'pearson')
   }
   if(!'MicrogliaGeneAllCorr' %in% ls()){
-    # load('../../Count_Data/Correlation_Matrices/MicrogliaGeneAllCorr.rda')
-    
+
     MicrogliaGeneAll <- rbind(MicrogliaGeneCVFiltered$coding,MicrogliaGeneCVFiltered$noncoding)
     MicrogliaGeneAllCorr <- rcorr(t(MicrogliaGeneAll),type = 'pearson')
   }
@@ -38,7 +36,6 @@ CreateEdgeFiles <- function(plots){
     # BrainGeneAll <- rbind(BrainGeneCVFiltered$coding,BrainGeneCVFiltered$noncoding)
     # BrainGeneAllCorr <- rcorr(t(BrainGeneAll),type = 'pearson')
   }
-  pValCutOff = 0.05
   if(plots){
     #Observe distribution of CV and p-value. Microglia
     tiff(filename = '../../Figures/Correlation_Network/Corr_PVal_Dist.tiff',width = 600,height=400)
@@ -97,12 +94,16 @@ CreateEdgeFiles <- function(plots){
   }
   
   #microglia coding genes
-  WriteFile(MicrogliaGeneCodingCorr,pValCutOff,'../../Louvain_Edge_List/CodingGenesEdgeListMicroglia.txt')
-  print(Sys.time() - a)
+  # WriteFile(MicrogliaGeneCodingCorr,pValCutOff=0.05,'../../Louvain_Edge_List/CodingGenesEdgeListMicroglia_CV25.txt')
+  # print(Sys.time() - a)
   
   #microglia all genes
-  WriteFile(MicrogliaGeneAllCorr,pValCutOff,'../../Louvain_Edge_List/AllGenesEdgeListMicroglia.txt')
-  print(Sys.time() -a)
+  # WriteFile(MicrogliaGeneAllCorr,pValCutOff=0.05,'../../Louvain_Edge_List/AllGenesEdgeListMicroglia_CV25.txt')
+  # print(Sys.time() -a)
+  
+  # load('../../Count_Data/CV_Filtered/MicrogliaTranscriptCVFiltered.rda')
+  # MicrogliaTranscriptAllCorr <- rcorr(t(rbind(MicrogliaTranscriptCVFiltered$coding,MicrogliaTranscriptCVFiltered$noncoding)),type = 'pearson')
+  # WriteFile(MicrogliaTranscriptAllCorr,pValCutOff=0.05,'../../Louvain_Edge_List/AllTranscriptsEdgeListMicroglia2.txt')
   
   #Randomly permuted microglia coding genes. 
   # WriteFile(RandomMicrogliaGeneCodingCorr,pValCutOff,'../../Louvain_Edge_List/RandomCodingGenesEdgeListMicroglia.txt')
