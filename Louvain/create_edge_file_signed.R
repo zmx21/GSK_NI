@@ -1,5 +1,5 @@
 library(Hmisc)
-CreateEdgeFilesUnsigned <- function(){
+CreateEdgeFilesSigned <- function(){
   if(!'MicrogliaGeneCodingCorr' %in% ls()){
     load('../../Count_Data/CV_Filtered/MicrogliaGeneCVFiltered.rda')
     MicrogliaGeneCodingCorr <- rcorr(t(MicrogliaGeneCVFiltered$coding),type = 'pearson')
@@ -27,17 +27,8 @@ CreateEdgeFilesUnsigned <- function(){
   }
   
   #microglia coding genes
-  WriteFile(MicrogliaGeneCodingCorr,pValCutOff=0.05,'../../Louvain_Edge_List/CodingGenesEdgeListMicrogliaUnsigned.txt')
-  # print(Sys.time() - a)
-  
+  WriteFile(MicrogliaGeneCodingCorr,pValCutOff=0.05,'../../Louvain_Edge_List/CodingGenesEdgeListMicrogliaSigned.txt')
+
   #microglia all genes
-  WriteFile(MicrogliaGeneAllCorr,pValCutOff=0.05,'../../Louvain_Edge_List/AllGenesEdgeListMicrogliaUnsigned.txt')
-  # print(Sys.time() -a)
-  
-  # load('../../Count_Data/CV_Filtered/MicrogliaTranscriptCVFiltered.rda')
-  # MicrogliaTranscriptAllCorr <- rcorr(t(rbind(MicrogliaTranscriptCVFiltered$coding,MicrogliaTranscriptCVFiltered$noncoding)),type = 'pearson')
-  # WriteFile(MicrogliaTranscriptAllCorr,pValCutOff=0.05,'../../Louvain_Edge_List/AllTranscriptsEdgeListMicroglia2.txt')
-  
-  #Randomly permuted microglia coding genes. 
-  # WriteFile(RandomMicrogliaGeneCodingCorr,pValCutOff,'../../Louvain_Edge_List/RandomCodingGenesEdgeListMicroglia.txt')
+  WriteFile(MicrogliaGeneAllCorr,pValCutOff=0.05,'../../Louvain_Edge_List/AllGenesEdgeListMicrogliaSigned.txt')
 }

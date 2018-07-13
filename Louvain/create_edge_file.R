@@ -1,17 +1,23 @@
-CreateEdgeFiles <- function(plots){
+CreateEdgeFiles <- function(plots=F){
   a <- Sys.time()
   library(Hmisc)
   library(parallel)
   library(plyr)
 
   if(!'MicrogliaGeneCodingCorr' %in% ls()){
-    load('../../Count_Data/CV_Filtered/MicrogliaGeneCVFiltered.rda')
-    MicrogliaGeneCodingCorr <- rcorr(t(MicrogliaGeneCVFiltered$coding),type = 'pearson')
+    # load('../../Count_Data/CV_Filtered/MicrogliaGeneCVFiltered.rda')
+    # MicrogliaGeneCodingCorr <- rcorr(t(MicrogliaGeneCVFiltered$coding),type = 'pearson')
+    print('loading coding corr')
+    load('../../Count_Data/Correlation_Matrices/MicrogliaGeneCodingCorr.rda')
+    
   }
   if(!'MicrogliaGeneAllCorr' %in% ls()){
 
-    MicrogliaGeneAll <- rbind(MicrogliaGeneCVFiltered$coding,MicrogliaGeneCVFiltered$noncoding)
-    MicrogliaGeneAllCorr <- rcorr(t(MicrogliaGeneAll),type = 'pearson')
+    # MicrogliaGeneAll <- rbind(MicrogliaGeneCVFiltered$coding,MicrogliaGeneCVFiltered$noncoding)
+    # MicrogliaGeneAllCorr <- rcorr(t(MicrogliaGeneAll),type = 'pearson')
+    
+    print('loading all corr')
+    load('../../Count_Data/Correlation_Matrices/MicrogliaGeneAllCorr.rda')
   }
   if(!'RandomMicrogliaGeneCodingCorr' %in% ls()){
     #For random test, shuffle node labels while keeping the same network. 
@@ -76,10 +82,19 @@ CreateEdgeFiles <- function(plots){
     return()
   }
   
-  WriteFile <- function(corrList,pValCutOff,path){
-    #Convert correlation matrix to a 3 columns. 1st and 2nd columns are nodes, and 3rd column is the weight.
-    corrList$P[lower.tri(corrList$P,diag = T)] <- Inf #only consider upper diagonal since symmetric
-    significantIndex <- which(corrList$P < pValCutOff,arr.ind = T,useNames = F)
+  WriteFile <- function(corrList,corCutOff,pValCutOff,absoluteValue,path){
+    #P value multiple correction adjustment, only taking upper diagonal
+    adjPValue <- p.adjust(corrList$P[upper.tri(corrList$P,diag = F)],method = 'BH')
+    adjMatrixFullP <- matrix(Inf,nrow = nrow(corrList$P),ncol = ncol(corrList$P))
+    adjMatrixFullP[upper.tri(adjMatrixFullP,diag = F)] <- adjPValue
+
+    if(absoluteValue){
+      adjMatrixFull <- ifelse(abs(corrList$r)>corCutOff & adjMatrixFullP < pValCutOff,1,0)
+    }else{
+      adjMatrixFull <- ifelse(corrList$r>corCutOff & adjMatrixFullP < pValCutOff,1,0)
+    }
+    adjMatrixFull[lower.tri(adjMatrixFull,diag = T)] <- 0 #only consider top triangular
+    significantIndex <- which(adjMatrixFull == 1,arr.ind = T,useNames = F)
     geneNames<- rownames(corrList$r)
     print(paste('writing: ',path))
     outFile <- file(path,'w')
@@ -92,19 +107,26 @@ CreateEdgeFiles <- function(plots){
     }
     close.connection(outFile)
   }
-  
   #microglia coding genes
-  # WriteFile(MicrogliaGeneCodingCorr,pValCutOff=0.05,'../../Louvain_Edge_List/CodingGenesEdgeListMicroglia_CV25.txt')
-  # print(Sys.time() - a)
+  WriteFile(MicrogliaGeneCodingCorr,corCutOff=0.25,pValCutOff = 0.05,absoluteValue=T,'../../Louvain_Edge_List/Pearson/CodingGenesEdgeListMicroglia_Pearson_pval0p05_cor0p25_abs.txt')
   
   #microglia all genes
-  # WriteFile(MicrogliaGeneAllCorr,pValCutOff=0.05,'../../Louvain_Edge_List/AllGenesEdgeListMicroglia_CV25.txt')
-  # print(Sys.time() -a)
+  WriteFile(MicrogliaGeneAllCorr,corCutOff=0.25,pValCutOff = 0.05,absoluteValue=T,'../../Louvain_Edge_List/Pearson/AllGenesEdgeListMicroglia_Pearson_pval0p05_cor0p25_abs.txt')
   
-  # load('../../Count_Data/CV_Filtered/MicrogliaTranscriptCVFiltered.rda')
-  # MicrogliaTranscriptAllCorr <- rcorr(t(rbind(MicrogliaTranscriptCVFiltered$coding,MicrogliaTranscriptCVFiltered$noncoding)),type = 'pearson')
-  # WriteFile(MicrogliaTranscriptAllCorr,pValCutOff=0.05,'../../Louvain_Edge_List/AllTranscriptsEdgeListMicroglia2.txt')
+  #microglia coding genes
+  WriteFile(MicrogliaGeneCodingCorr,corCutOff=0.25,pValCutOff = 0.05,absoluteValue=F,'../../Louvain_Edge_List/Pearson/CodingGenesEdgeListMicroglia_Pearson_pval0p05_cor0p25_noabs.txt')
   
-  #Randomly permuted microglia coding genes. 
-  # WriteFile(RandomMicrogliaGeneCodingCorr,pValCutOff,'../../Louvain_Edge_List/RandomCodingGenesEdgeListMicroglia.txt')
+  #microglia all genes
+  WriteFile(MicrogliaGeneAllCorr,corCutOff=0.25,pValCutOff = 0.05,absoluteValue=F,'../../Louvain_Edge_List/Pearson/AllGenesEdgeListMicroglia_Pearson_pval0p05_cor0p25_noabs.txt')
+  
+  #microglia coding genes
+  sortedCor <- sort(MicrogliaGeneCodingCorr$r[upper.tri(MicrogliaGeneCodingCorr$r,diag = F)],decreasing=F)
+  top1milCutOff <- sortedCor[length(sortedCor) - 1e6]
+  WriteFile(MicrogliaGeneCodingCorr,corCutOff=top1milCutOff,pValCutOff = Inf,absoluteValue=F,'../../Louvain_Edge_List/Pearson/CodingGenesEdgeListMicroglia_Pearson_top1milpos.txt')
+  
+  #microglia all genes
+  sortedCor <- sort(MicrogliaGeneAllCorr$r[upper.tri(MicrogliaGeneAllCorr$r,diag = F)],decreasing=F)
+  top1milCutOff <- sortedCor[length(sortedCor) - 1e6]
+  WriteFile(MicrogliaGeneAllCorr,corCutOff=top1milCutOff,pValCutOff = Inf,absoluteValue=F,'../../Louvain_Edge_List/Pearson/AllGenesEdgeListMicroglia_Pearson_top1milpos.txt')
+  
 }

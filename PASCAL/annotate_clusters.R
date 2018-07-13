@@ -1,3 +1,4 @@
+library(gridExtra)
 GetSingleClusterAnnotation <- function(genes,librariesToRun){
   invisible(capture.output(df <- enrichR::enrichr(genes = genes,databases = librariesToRun)))
   df <- do.call(rbind,df)
@@ -73,18 +74,29 @@ geneIdToName <- hashmap::hashmap(keys = geneGtfTableFull$gene_id,values = geneGt
 librariesToRun <- c('KEGG_2016','TRANSFAC_and_JASPAR_PWMs','Jensen_DISEASES')
 
 GetTopPercentileOfEachStudy <- function(){
-  load('../../Count_Data/JoinedDfMicroglia.rda')
-  JoinedDfMicroglia <- JoinedDfMicroglia %>% dplyr::filter(Biotype=='coding' & Level < 10) %>%
-    dplyr::arrange(adjPvalue)
-  ClusterAnnotResults <- GetClustersAnnotation(JoinedDfMicroglia,geneIdToName,librariesToRun,topPercentile = 0.1,save = T)
-  save(ClusterAnnotResults,file='../../GWAS/PASCAL_results/microglia_gene/ClusterAnnot.rda')
+  method <- c('CodingGenesMicroglia_Jaccard_pval0p05_cor0p25_abs',
+              'CodingGenesMicroglia_Jaccard_pval0p05_cor0p25_noabs',
+              'CodingGenesMicroglia_Jaccard_top1milpos')
+  for(i in 1:length(method)){
+    load(paste0('../../Count_Data/PASCAL_Results/',method[i],'.rda'))
+    JoinedDfMicroglia <- JoinedDfMicroglia %>% dplyr::arrange(adjPvalue)
+    ClusterAnnotResults <- GetClustersAnnotation(JoinedDfMicroglia,geneIdToName,librariesToRun,topPercentile = 0.1,save = F)
+    save(ClusterAnnotResults,file=paste0('../../GWAS/PASCAL_results/filter',i,'.rda'))
+  }
 }
-GetAnnotationForSignificantClusters <- function(){
-  load('../../Count_Data/PASCAL_Results/JoinedDfMicrogliaPathwayGenes.rda')
+GetAnnotationForSignificantClusters <- function(path){
+  load(path)
   #Keep only clusters greater than 10 and less than 200
-  JoinDfMicroglia <- JoinDfMicroglia %>% dplyr::filter(Size > 10 & Size < 200 & Level > 3)
+  JoinedDfMicroglia <- JoinedDfMicroglia %>% dplyr::filter(Size > 10 & Size < 200)
   ClusterAnnotSigResults <- GetClustersAnnotation(JoinedDfMicroglia %>% filter(adjPvalue < 0.1),
                                                   geneIdToName,librariesToRun,topPercentile = 1,save = F)
+  library(gridExtra)
+  df <- do.call(rbind,lapply(ClusterAnnotSigResults,function(x) x$df))
+  rownames(df) <- as.character(seq(1,nrow(df)))
+  grid.arrange(tableGrob(df %>% 
+                           dplyr::select(adjPvalue,StudyName,Size,Biotype,KEGG_2016.Term,
+                                         KEGG_2016.Overlap,KEGG_2016.Adjusted.P.value)))
+  
   return(ClusterAnnotSigResults)
 }
 GetAnnotationTranscriptClusters <- function(){
@@ -93,6 +105,15 @@ GetAnnotationTranscriptClusters <- function(){
                                                   geneIdToName,librariesToRun,topPercentile = 1,save = F)
   return(ClusterAnnotSigResults)
 }
+# p0p05 <- '../../Count_Data/PASCAL_Results/JoinedDfMicrogliaPathwayGenes_0p05.rda'
+# GetAnnotationForSignificantClusters(p0p05)
+# 
+# p0p01 <- '../../Count_Data/PASCAL_Results/JoinedDfMicrogliaPathwayGenes_0p01.rda'
+# sigClusters0p01 <- do.call(rbind,lapply(GetAnnotationForSignificantClusters(p0p01),function(x) x$df))
+# 
+# signed0p05 <- '../../Count_Data/PASCAL_Results/JoinedDfMicrogliaPathwayGenesSigned_0p05.rda'
+# sigClustersSigned0p05 <- do.call(rbind,lapply(GetAnnotationForSignificantClusters(signed0p05),function(x) x$df))
+
 
 
 # allEnrichRLib <- enrichR::listEnrichrDbs()$libraryName 

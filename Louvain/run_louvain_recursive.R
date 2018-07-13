@@ -194,10 +194,49 @@ RunLouvainRecursive <- function(initialEdgeListPath,outDirectory,prefix=""){
 # initialEdgeListPath <- '/local/data/public/zmx21/zmx21_private/GSK/Louvain_Edge_List/AllGenesEdgeListMicroglia_pval0p01.txt'
 # RunLouvainRecursive(initialEdgeListPath = initialEdgeListPath,outDirectory = outDirectory,prefix = 'all_microglia_genes')
 
-outDirectory <- '/local/data/public/zmx21/zmx21_private/GSK/Louvain_results/CodingMicrogliaGenesSigned/'
-initialEdgeListPath <- '/local/data/public/zmx21/zmx21_private/GSK/Louvain_Edge_List/CodingGenesEdgeListMicrogliaSigned.txt'
-RunLouvainRecursive(initialEdgeListPath = initialEdgeListPath,outDirectory = outDirectory,prefix = 'coding_microglia_genes')
+# outDirectory <- '/local/data/public/zmx21/zmx21_private/GSK/Louvain_results/CodingMicrogliaGenesSigned/'
+# initialEdgeListPath <- '/local/data/public/zmx21/zmx21_private/GSK/Louvain_Edge_List/CodingGenesEdgeListMicrogliaSigned.txt'
+# RunLouvainRecursive(initialEdgeListPath = initialEdgeListPath,outDirectory = outDirectory,prefix = 'coding_microglia_genes')
+# 
+# outDirectory <- '/local/data/public/zmx21/zmx21_private/GSK/Louvain_results/AllMicrogliaGenesSigned'
+# initialEdgeListPath <- '/local/data/public/zmx21/zmx21_private/GSK/Louvain_Edge_List/AllGenesEdgeListMicrogliaSigned.txt'
+# RunLouvainRecursive(initialEdgeListPath = initialEdgeListPath,outDirectory = outDirectory,prefix = 'all_microglia_genes')
 
-outDirectory <- '/local/data/public/zmx21/zmx21_private/GSK/Louvain_results/AllMicrogliaGenesSigned'
-initialEdgeListPath <- '/local/data/public/zmx21/zmx21_private/GSK/Louvain_Edge_List/AllGenesEdgeListMicrogliaSigned.txt'
-RunLouvainRecursive(initialEdgeListPath = initialEdgeListPath,outDirectory = outDirectory,prefix = 'all_microglia_genes')
+
+# outDirectory <- '/local/data/public/zmx21/zmx21_private/GSK/Louvain_results/CodingMicrogliaGenesJaccard/'
+# initialEdgeListPath <- '/local/data/public/zmx21/zmx21_private/GSK/Louvain_Edge_List/CodingGenesEdgeListMicrogliaJaccard.txt'
+# RunLouvainRecursive(initialEdgeListPath = initialEdgeListPath,outDirectory = outDirectory,prefix = 'coding_microglia_genes')
+# 
+# edgeListPath <- '/local/data/public/zmx21/zmx21_private/GSK/Louvain_Edge_List/Jaccard/'
+# edgeListFilesJaccard <- dir(edgeListPath)
+# allJaccardEdgeList <- paste0(edgeListPath,edgeListFilesJaccard)
+
+outPathJaccard <- '/local/data/public/zmx21/zmx21_private/GSK/Louvain_results/Jaccard/'
+allJaccardOutPath <- sapply(edgeListFilesJaccard,function(x) paste0(outPathJaccard,gsub(pattern = '.txt',replacement = '',x = x)))
+for(i in 1:length(allJaccardEdgeList)){
+  type <- ifelse(grepl(pattern = 'Coding',edgeListFilesJaccard[i]),'coding','all')
+  RunLouvainRecursive(initialEdgeListPath = allJaccardEdgeList[i],outDirectory = allJaccardOutPath[i],prefix = type)
+}
+
+edgeListPath <- '/local/data/public/zmx21/zmx21_private/GSK/Louvain_Edge_List/Pearson/'
+edgeListFilesPearson <- dir(edgeListPath)
+allPearsonEdgeList <- paste0(edgeListPath,edgeListFilesPearson)
+
+outPathPearson <- '/local/data/public/zmx21/zmx21_private/GSK/Louvain_results/Pearson/'
+allPearsonOutPath <- sapply(edgeListFilesPearson,function(x) paste0(outPathPearson,gsub(pattern = '.txt',replacement = '',x = x)))
+for(i in 1:length(allPearsonEdgeList)){
+  type <- ifelse(grepl(pattern = 'Coding',edgeListFilesPearson[i]),'coding','all')
+  RunLouvainRecursive(initialEdgeListPath = allPearsonEdgeList[i],outDirectory = allPearsonOutPath[i],prefix = type)
+}
+
+for(i in 1:length(allJaccardOutPath)){
+  cmd <- paste0('find ',allJaccardOutPath[i],'/*/clusters/*.gmt | xargs -n 1 cat >> ',outPathJaccard,
+                gsub(pattern = 'EdgeList',replacement = '',x = gsub(pattern = '.txt',replacement = '.gmt',x = edgeListFilesJaccard[i])))
+  system(cmd)
+}
+
+for(i in 1:length(allPearsonOutPath)){
+  cmd <- paste0('find ',allPearsonOutPath[i],'/*/clusters/*.gmt | xargs -n 1 cat >> ',outPathPearson,
+                gsub(pattern = 'EdgeList',replacement = '',x = gsub(pattern = '.txt',replacement = '.gmt',x = edgeListFilesPearson[i])))
+  system(cmd)
+}

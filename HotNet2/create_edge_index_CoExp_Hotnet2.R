@@ -4,8 +4,7 @@
 library(data.table)
 library(dplyr)
 library(hashmap)
-WriteHotnetFiles <- function(edgeListPath,GWASDb,path){
-  weightCutOff <- 0.5
+WriteHotnetFiles <- function(edgeListPath,GWASDb,path,weightCutOff=0){
   #Only take significant edges, above weight cutoff
   edgeList <- data.table::fread(edgeListPath) %>% dplyr::filter(V3>weightCutOff) %>% select(GeneA=V1,GeneB=V2)
   #Genes must be in GWAS study
@@ -36,12 +35,19 @@ for(i in 1:length(StudyNames)){
   GWASPath <- '/local/data/public/zmx21/zmx21_private/GSK/GWAS/PASCAL_results/microglia_coding_genes/'
   GWASDb <- data.table::fread(file=paste0(GWASPath,StudyNames[i],'.sum.genescores.txt'))
   curStudyString <- gsub('[.]','_',StudyNames[i])
-  WriteHotnetFiles('/local/data/public/zmx21/zmx21_private/GSK/Louvain_Edge_List/CodingGenesEdgeListMicroglia.txt',
-                   GWASDb,paste0('/local/data/public/zmx21/zmx21_private/GSK/HotNet_CoExp/',curStudyString,'_coding_genes/'))
-  GWASPath <- '/local/data/public/zmx21/zmx21_private/GSK/GWAS/PASCAL_results/microglia_all_genes/'
-  GWASDb <- data.table::fread(file=paste0(GWASPath,StudyNames[i],'.sum.genescores.txt'))
-  WriteHotnetFiles('/local/data/public/zmx21/zmx21_private/GSK/Louvain_Edge_List/AllGenesEdgeListMicroglia.txt',
-                   GWASDb,paste0('/local/data/public/zmx21/zmx21_private/GSK/HotNet_CoExp/',curStudyString,'_all_genes/'))
+  WriteHotnetFiles('/local/data/public/zmx21/zmx21_private/GSK/Louvain_Edge_List/Jaccard/CodingGenesEdgeListMicroglia_Jaccard_pval0p05_cor0p25_abs.txt',
+                   GWASDb,weightCutOff = 0,
+                   paste0('/local/data/public/zmx21/zmx21_private/GSK/HotNet_CoExp/',curStudyString,'_coding_genes_Jaccard0/'))
+  edgeList <- data.table::fread('/local/data/public/zmx21/zmx21_private/GSK/Louvain_Edge_List/Jaccard/CodingGenesEdgeListMicroglia_Jaccard_pval0p05_cor0p25_abs.txt')
+  weigthCutOff <- quantile(edgeList$V3,0.25)
+  WriteHotnetFiles('/local/data/public/zmx21/zmx21_private/GSK/Louvain_Edge_List/Jaccard/CodingGenesEdgeListMicroglia_Jaccard_pval0p05_cor0p25_abs.txt',
+                   GWASDb,weightCutOff = weigthCutOff,
+                   paste0('/local/data/public/zmx21/zmx21_private/GSK/HotNet_CoExp/',curStudyString,'_coding_genes_Jaccard25/'))
+  
+  # GWASPath <- '/local/data/public/zmx21/zmx21_private/GSK/GWAS/PASCAL_results/microglia_all_genes/'
+  # GWASDb <- data.table::fread(file=paste0(GWASPath,StudyNames[i],'.sum.genescores.txt'))
+  # WriteHotnetFiles('/local/data/public/zmx21/zmx21_private/GSK/Louvain_Edge_List/AllGenesEdgeListMicroglia.txt',
+  #                  GWASDb,paste0('/local/data/public/zmx21/zmx21_private/GSK/HotNet_CoExp/',curStudyString,'_all_genes/'))
   # GWASPath <- '/local/data/public/zmx21/zmx21_private/GSK/GWAS/PASCAL_results/microglia_coding_transcripts/'
   # GWASDb <- data.table::fread(file=paste0(GWASPath,StudyNames[i],'.sum.genescores.txt'))
   # WriteHotnetFiles('/local/data/public/zmx21/zmx21_private/GSK/Louvain_Edge_List/CodingTranscriptsEdgeListMicroglia.txt',
