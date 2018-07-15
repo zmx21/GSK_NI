@@ -41,7 +41,7 @@ PlotThresholdingIndex(sftCoding)
 PlotThresholdingIndex(sftAll)
 
 #From above, we see that threshold of 6 reaches the Scale indepdence topology cutoff nearly.
-softPower = 6;
+softPower = 4;
 adjacencyCoding = adjacency(exprMatCoding, power = softPower)
 adjacencyAll= adjacency(exprMatAll, power = softPower)
 
@@ -62,23 +62,31 @@ geneTreeAllUnsigned = hclust(as.dist(dissTOMAllUnsigned), method = "average")
 #      labels = FALSE, hang = 0.04)
 
 
-# We like large modules, so we set the minimum module size relatively high:
-minModuleSize = 10;
+minModuleSize = 3
+deepSplit = 2
 # Module identification using dynamic tree cut:
 modulesCodingSigned = cutreeDynamic(dendro = geneTreeCodingSigned, distM = dissTOMCodingSigned,
-                            deepSplit = 2, pamRespectsDendro = FALSE,
+                            deepSplit = deepSplit, pamRespectsDendro = FALSE,
                             minClusterSize = minModuleSize)
+# dynamicColors = labels2colors(modulesCodingSigned)
+# table(dynamicColors)
+# # Plot the dendrogram and colors underneath
+# sizeGrWindow(8,6)
+# plotDendroAndColors(geneTreeCodingSigned, dynamicColors, "Dynamic Tree Cut",
+#                     dendroLabels = FALSE, hang = 0.03,
+#                     addGuide = TRUE, guideHang = 0.05,
+#                     main = "Gene dendrogram and module colors")
 
 modulesCodingUnsigned = cutreeDynamic(dendro = geneTreeCodingUnsigned, distM = dissTOMCodingUnsigned,
-                                    deepSplit = 2, pamRespectsDendro = FALSE,
+                                    deepSplit = deepSplit, pamRespectsDendro = FALSE,
                                     minClusterSize = minModuleSize)
 
 modulesAllSigned = cutreeDynamic(dendro = geneTreeAllSigned, distM = dissTOMAllSigned,
-                                      deepSplit = 2, pamRespectsDendro = FALSE,
+                                      deepSplit = deepSplit, pamRespectsDendro = FALSE,
                                       minClusterSize = minModuleSize)
 
 modulesAllUnsigned = cutreeDynamic(dendro = geneTreeAllUnsigned, distM = dissTOMAllUnsigned,
-                                      deepSplit = 2, pamRespectsDendro = FALSE,
+                                      deepSplit = deepSplit, pamRespectsDendro = FALSE,
                                       minClusterSize = minModuleSize)
 
 WriteGMT <- function(moduleVector,geneNames,path,type){
@@ -98,17 +106,17 @@ WriteGMT <- function(moduleVector,geneNames,path,type){
 }
 WriteGMT(moduleVector = modulesCodingSigned,
          rownames(adjacencyCoding),
-         path = '../../WGCNA_clusters/CodingWGCNASigned.gmt',
+         path = '../../WGCNA_clusters/CodingWGCNASigned_Soft4_Size3.gmt',
          type = 'coding')
 WriteGMT(moduleVector = modulesCodingUnsigned,
          rownames(adjacencyCoding),
-         path = '../../WGCNA_clusters/CodingWGCNAUnsigned.gmt',
+         path = '../../WGCNA_clusters/CodingWGCNAUnsigned_Soft4_Size3.gmt',
          type = 'coding')
 WriteGMT(moduleVector = modulesAllSigned,
          rownames(adjacencyAll),
-         path = '../../WGCNA_clusters/AllWGCNASigned.gmt',
+         path = '../../WGCNA_clusters/AllWGCNASigned_Soft4_Size3.gmt',
          type='all')
 WriteGMT(moduleVector = modulesAllUnsigned,
          rownames(adjacencyAll),
-         path = '../../WGCNA_clusters/AllWGCNAUnsigned.gmt',
+         path = '../../WGCNA_clusters/AllWGCNAUnsigned_Soft4_Size3.gmt',
          type='all')

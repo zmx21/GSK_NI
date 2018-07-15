@@ -207,22 +207,23 @@ RunLouvainRecursive <- function(initialEdgeListPath,outDirectory,prefix=""){
 # initialEdgeListPath <- '/local/data/public/zmx21/zmx21_private/GSK/Louvain_Edge_List/CodingGenesEdgeListMicrogliaJaccard.txt'
 # RunLouvainRecursive(initialEdgeListPath = initialEdgeListPath,outDirectory = outDirectory,prefix = 'coding_microglia_genes')
 # 
-# edgeListPath <- '/local/data/public/zmx21/zmx21_private/GSK/Louvain_Edge_List/Jaccard/'
-# edgeListFilesJaccard <- dir(edgeListPath)
-# allJaccardEdgeList <- paste0(edgeListPath,edgeListFilesJaccard)
 
-outPathJaccard <- '/local/data/public/zmx21/zmx21_private/GSK/Louvain_results/Jaccard/'
+edgeListPathJaccard <- '/local/data/public/zmx21/zmx21_private/GSK/Louvain_Edge_List/Jaccard_Cor0p2/'
+edgeListFilesJaccard <- dir(edgeListPathJaccard)
+allJaccardEdgeList <- paste0(edgeListPathJaccard,edgeListFilesJaccard)
+
+outPathJaccard <- '/local/data/public/zmx21/zmx21_private/GSK/Louvain_results/Jaccard_Cor0p2/'
 allJaccardOutPath <- sapply(edgeListFilesJaccard,function(x) paste0(outPathJaccard,gsub(pattern = '.txt',replacement = '',x = x)))
 for(i in 1:length(allJaccardEdgeList)){
   type <- ifelse(grepl(pattern = 'Coding',edgeListFilesJaccard[i]),'coding','all')
   RunLouvainRecursive(initialEdgeListPath = allJaccardEdgeList[i],outDirectory = allJaccardOutPath[i],prefix = type)
 }
 
-edgeListPath <- '/local/data/public/zmx21/zmx21_private/GSK/Louvain_Edge_List/Pearson/'
-edgeListFilesPearson <- dir(edgeListPath)
-allPearsonEdgeList <- paste0(edgeListPath,edgeListFilesPearson)
+edgeListPathPearson <- '/local/data/public/zmx21/zmx21_private/GSK/Louvain_Edge_List/Pearson_Cor0p2/'
+edgeListFilesPearson <- dir(edgeListPathPearson)
+allPearsonEdgeList <- paste0(edgeListPathPearson,edgeListFilesPearson)
 
-outPathPearson <- '/local/data/public/zmx21/zmx21_private/GSK/Louvain_results/Pearson/'
+outPathPearson <- '/local/data/public/zmx21/zmx21_private/GSK/Louvain_results/Pearson_Cor0p2/'
 allPearsonOutPath <- sapply(edgeListFilesPearson,function(x) paste0(outPathPearson,gsub(pattern = '.txt',replacement = '',x = x)))
 for(i in 1:length(allPearsonEdgeList)){
   type <- ifelse(grepl(pattern = 'Coding',edgeListFilesPearson[i]),'coding','all')

@@ -156,7 +156,7 @@ CompareTrueWithRandom <- function(global=F){
   }
 }
 
-LoadPASCALResults <- function(filter=T,resultPaths,clusterPaths){
+LoadPASCALResults <- function(filter=T,resultPaths,clusterPaths,sizeLower=10,sizeUpper=200){
   source('pval_correction.R')
   microgliaAllGenesPath <- GetPathToPASCALResults(resultPaths[1])
   JoinedDfMicroglia <- ParsePASCALFile(microgliaAllGenesPath,clusterPaths[1])
@@ -165,7 +165,7 @@ LoadPASCALResults <- function(filter=T,resultPaths,clusterPaths){
     JoinedDfMicroglia <- rbind(JoinedDfMicroglia,ParsePASCALFile(microgliaCodingGenesPath,clusterPaths[2]))
   }
   # JoinedDfMicroglia <- ParsePASCALFile(GetPathToPASCALResults('../../GWAS/PASCAL_results/Old/microglia_gene/'),'../../Louvain_results/Old/microglia_gene_clusters.gmt')
-  JoinedDfMicroglia <- JoinedDfMicroglia %>% dplyr::filter(Size > 10 & Size < 200)
+  JoinedDfMicroglia <- JoinedDfMicroglia %>% dplyr::filter(Size > sizeLower & Size < sizeUpper)
   JoinedDfMicroglia <- AppendCorrectedPVal(JoinedDfMicroglia)
   if(filter){
     #Remove repeating rows
@@ -198,12 +198,10 @@ LoadPASCALTranscriptResults <- function(filter=T){
 
 
 
-JoinedDfMicroglia <- LoadPASCALResults(filter=T,c('../../GWAS/PASCAL_results2/CodingGenesMicroglia_Jaccard_pval0p05_cor0p25_abs/',
-                                                  '../../GWAS/PASCAL_results2/AllGenesMicroglia_Jaccard_pval0p05_cor0p25_abs/'),
-                                       c('../../Louvain_results/Jaccard/CodingGenesMicroglia_Jaccard_pval0p05_cor0p25_abs.gmt',
-                                         '../../Louvain_results/Jaccard/AllGenesMicroglia_Jaccard_pval0p05_cor0p25_abs.gmt'))
-save(JoinedDfMicroglia,file='../../Count_Data/PASCAL_Results/AllGenesMicroglia_Jaccard_pval0p05_cor0p25_abs.rda')
-sigClusters <- do.call(rbind,lapply(GetAnnotationForSignificantClusters('../../Count_Data/PASCAL_Results/AllGenesMicroglia_Jaccard_pval0p05_cor0p25_abs.rda'),function(x) x$df))
+JoinedDfMicroglia <- LoadPASCALResults(filter=T,c('../../GWAS/PASCAL_results2/CodingGenesMicroglia_Jaccard_pval0p05_cor0p25_abs/'),
+                                       c('../../Louvain_results/Jaccard/CodingGenesMicroglia_Jaccard_pval0p05_cor0p25_abs.gmt'),sizeLower = 5)
+save(JoinedDfMicroglia,file='../../Count_Data/PASCAL_Results/CodingGenesMicroglia_Jaccard_pval0p05_cor0p25_abs.rda')
+sigClusters <- do.call(rbind,lapply(GetAnnotationForSignificantClusters(JoinedDfMicroglia,isPath = F),function(x) x$df))
 GetGWASMetdata(sigClusters)
 
 JoinedDfMicroglia <- LoadPASCALResults(filter=T,c('../../GWAS/PASCAL_results2/CodingGenesMicroglia_Jaccard_pval0p05_cor0p25_noabs/'),
@@ -242,9 +240,24 @@ GetGWASMetdata(sigClusters)
 
 
 
+# JoinedDfMicroglia <- LoadPASCALResults(filter=T,c('../../GWAS/PASCAL_results_WGCNA/CodingWGCNASigned/'),
+#                                        c('../../GWAS/PASCAL_New/resources/genesets/WGCNA_clusters/CodingWGCNASigned.gmt'))
+# save(JoinedDfMicroglia,file='../../Count_Data/PASCAL_Results/WGCNASigned.rda')
+# sigClusters <- do.call(rbind,lapply(GetAnnotationForSignificantClusters('../../Count_Data/PASCAL_Results/WGCNASigned.rda'),function(x) x$df))
+# GetGWASMetdata(sigClusters)
+# 
+# 
+# JoinedDfMicroglia <- LoadPASCALResults(filter=T,c('../../GWAS/PASCAL_results_WGCNA/CodingWGCNAUnsigned/'),
+#                                        c('../../GWAS/PASCAL_New/resources/genesets/WGCNA_clusters/CodingWGCNAUnsigned.gmt'))
+# save(JoinedDfMicroglia,file='../../Count_Data/PASCAL_Results/WGCNAUnsigned.rda')
+# sigClusters <- do.call(rbind,lapply(GetAnnotationForSignificantClusters('../../Count_Data/PASCAL_Results/WGCNAUnsigned.rda'),function(x) x$df))
+# GetGWASMetdata(sigClusters)
+# 
 
-
-
-
+# JoinedDfMicroglia <- LoadPASCALResults(filter=T,c('../../GWAS/PASCAL_results_WGCNA_soft4/CodingWGCNASigned_Soft4/'),
+#                                        c('../../GWAS/PASCAL_New/resources/genesets/WGCNA_clusters_soft4/CodingWGCNASigned_Soft4.gmt'))
+# save(JoinedDfMicroglia,file='../../Count_Data/PASCAL_Results/WGCNASigned_Soft4.rda')
+# sigClusters <- do.call(rbind,lapply(GetAnnotationForSignificantClusters(JoinedDfMicroglia,isPath = F),function(x) x$df))
+# GetGWASMetdata(sigClusters)
 
 

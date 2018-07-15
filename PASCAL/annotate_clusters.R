@@ -31,7 +31,7 @@ GetTopTermsForEachLib <- function(enrichrResult,librariesToRun){
   }
 }
 
-GetClustersAnnotation <- function(JoinedDfMicroglia,geneIdToName,librariesToRun,topPercentile=0.1,save = F){
+GetClustersAnnotation <- function(JoinedDfMicroglia,codingGenes,geneIdToName,librariesToRun,topPercentile=0.1,save = F){
   uniqueStudies <- unique(JoinedDfMicroglia$StudyName)
   clusterResults <- vector(mode = 'list',length = length(uniqueStudies))
   names(clusterResults) <- uniqueStudies
@@ -49,6 +49,8 @@ GetClustersAnnotation <- function(JoinedDfMicroglia,geneIdToName,librariesToRun,
     enrichrResults <- vector(mode='list',length = length(allGenes))
     for(j in 1:length(enrichrResults)){
       print(j/length(enrichrResults))
+      currentGenes <- allGenes[[j]]
+      currentGenes <- currentGenes[which(codingGenes[[currentGenes]])]
       enrichrResults[[j]] <- GetSingleClusterAnnotation(genes = allGenes[[j]],
                                                         librariesToRun = librariesToRun)
     }
@@ -68,9 +70,11 @@ library(hashmap)
 library(plyr)
 library(dplyr)
 source('../BatchCorrection_and_QC/load_GTF.R')
-geneGtfTableFull <- LoadGTF(full=T) %>% dplyr::distinct(gene_id,.keep_all=T)
-geneGtfTableFull <- geneGtfTableFull %>% dplyr::select(gene_name,gene_id)
+# geneGtfTableFull <- LoadGTF(full=T) %>% dplyr::distinct(gene_id,.keep_all=T)
+# geneGtfTableFull <- geneGtfTableFull %>% dplyr::select(gene_name,gene_id,gene_biotype)
+load(file='../../Count_Data/geneGtfTableFull.rda')
 geneIdToName <- hashmap::hashmap(keys = geneGtfTableFull$gene_id,values = geneGtfTableFull$gene_name)
+codingGenes <- hashmap::hashmap(keys = geneGtfTableFull$gene_name,values = ifelse(geneGtfTableFull$gene_biotype=='protein_coding',T,F))
 librariesToRun <- c('KEGG_2016','TRANSFAC_and_JASPAR_PWMs','Jensen_DISEASES')
 
 GetTopPercentileOfEachStudy <- function(){
@@ -80,15 +84,16 @@ GetTopPercentileOfEachStudy <- function(){
   for(i in 1:length(method)){
     load(paste0('../../Count_Data/PASCAL_Results/',method[i],'.rda'))
     JoinedDfMicroglia <- JoinedDfMicroglia %>% dplyr::arrange(adjPvalue)
-    ClusterAnnotResults <- GetClustersAnnotation(JoinedDfMicroglia,geneIdToName,librariesToRun,topPercentile = 0.1,save = F)
+    ClusterAnnotResults <- GetClustersAnnotation(JoinedDfMicroglia,codingGenes,geneIdToName,librariesToRun,topPercentile = 0.1,save = F)
     save(ClusterAnnotResults,file=paste0('../../GWAS/PASCAL_results/filter',i,'.rda'))
   }
 }
-GetAnnotationForSignificantClusters <- function(path){
-  load(path)
-  #Keep only clusters greater than 10 and less than 200
-  JoinedDfMicroglia <- JoinedDfMicroglia %>% dplyr::filter(Size > 10 & Size < 200)
-  ClusterAnnotSigResults <- GetClustersAnnotation(JoinedDfMicroglia %>% filter(adjPvalue < 0.1),
+GetAnnotationForSignificantClusters <- function(JoinedDfMicroglia,isPath=T){
+  if(isPath){
+    load(JoinedDfMicroglia)
+  }
+  JoinedDfMicroglia <- JoinedDfMicroglia
+  ClusterAnnotSigResults <- GetClustersAnnotation(JoinedDfMicroglia %>% filter(adjPvalue < 0.1),codingGenes,
                                                   geneIdToName,librariesToRun,topPercentile = 1,save = F)
   library(gridExtra)
   df <- do.call(rbind,lapply(ClusterAnnotSigResults,function(x) x$df))
@@ -101,7 +106,7 @@ GetAnnotationForSignificantClusters <- function(path){
 }
 GetAnnotationTranscriptClusters <- function(){
   load('../../Count_Data/PASCAL_Results/JoinedDfMicrogliaPathwayTranscript.rda')
-  ClusterAnnotSigResults <- GetClustersAnnotation(JoinedDfMicrogliaTranscript %>% filter(adjPvalue < 0.2),
+  ClusterAnnotSigResults <- GetClustersAnnotation(JoinedDfMicrogliaTranscript %>% filter(adjPvalue < 0.2),codingGenes,
                                                   geneIdToName,librariesToRun,topPercentile = 1,save = F)
   return(ClusterAnnotSigResults)
 }

@@ -8,17 +8,17 @@ CalcJaccard <- function(i,j,neighbourMap){
   return(length(intersect(iNeighbours,jNeighbours))/length(union(iNeighbours,jNeighbours)))
 }
 CreateEdgeFilesJaccard <- function(){
+  load('../../Count_Data/CV_Filtered/MicrogliaGeneCVFiltered.rda')
   if(!'MicrogliaGeneCodingCorr' %in% ls()){
-    # load('../../Count_Data/CV_Filtered/MicrogliaGeneCVFiltered.rda')
-    # MicrogliaGeneCodingCorr <- rcorr(t(MicrogliaGeneCVFiltered$coding),type = 'pearson')
     print('loading coding corr')
-    load('../../Count_Data/Correlation_Matrices/MicrogliaGeneCodingCorr.rda')
+    MicrogliaGeneCodingCorr <- rcorr(t(MicrogliaGeneCVFiltered$coding),type = 'pearson')
+    # load('../../Count_Data/Correlation_Matrices/MicrogliaGeneCodingCorr.rda')
   }
   if(!'MicrogliaGeneAllCorr' %in% ls()){
-    # MicrogliaGeneAll <- rbind(MicrogliaGeneCVFiltered$coding,MicrogliaGeneCVFiltered$noncoding)
-    # MicrogliaGeneAllCorr <- rcorr(t(MicrogliaGeneAll),type = 'pearson')
-    print('loading all corr')
-    load('../../Count_Data/Correlation_Matrices/MicrogliaGeneAllCorr.rda')
+    # print('loading all corr')
+    MicrogliaGeneAll <- rbind(MicrogliaGeneCVFiltered$coding,MicrogliaGeneCVFiltered$noncoding)
+    MicrogliaGeneAllCorr <- rcorr(t(MicrogliaGeneAll),type = 'pearson')
+    # load('../../Count_Data/Correlation_Matrices/MicrogliaGeneAllCorr.rda')
   }
   WriteFile <- function(corrList,corCutOff,pValCutOff,absoluteValue,path){
     #P value multiple correction adjustment, only taking upper diagonal
@@ -60,25 +60,29 @@ CreateEdgeFilesJaccard <- function(){
     # close.connection(outFile)
   }
   #microglia coding genes
-  WriteFile(MicrogliaGeneCodingCorr,corCutOff=0.25,pValCutOff = 0.05,absoluteValue=T,'../../Louvain_Edge_List/Jaccard/CodingGenesEdgeListMicroglia_Jaccard_pval0p05_cor0p25_abs.txt')
+  # WriteFile(MicrogliaGeneCodingCorr,corCutOff=0.25,pValCutOff = 0.05,absoluteValue=T,'../../Louvain_Edge_List/Jaccard/CodingGenesEdgeListMicroglia_Jaccard_pval0p05_cor0p25_abs.txt')
 
   #microglia all genes
-  WriteFile(MicrogliaGeneAllCorr,corCutOff=0.25,pValCutOff = 0.05,absoluteValue=T,'../../Louvain_Edge_List/Jaccard/AllGenesEdgeListMicroglia_Jaccard_pval0p05_cor0p25_abs.txt')
+  # WriteFile(MicrogliaGeneAllCorr,corCutOff=0.25,pValCutOff = 0.05,absoluteValue=T,'../../Louvain_Edge_List/Jaccard/AllGenesEdgeListMicroglia_Jaccard_pval0p05_cor0p25_abs.txt')
   
   #microglia coding genes
-  WriteFile(MicrogliaGeneCodingCorr,corCutOff=0.25,pValCutOff = 0.05,absoluteValue=F,'../../Louvain_Edge_List/Jaccard/CodingGenesEdgeListMicroglia_Jaccard_pval0p05_cor0p25_noabs.txt')
+  # WriteFile(MicrogliaGeneCodingCorr,corCutOff=0.25,pValCutOff = 0.05,absoluteValue=F,'../../Louvain_Edge_List/Jaccard/CodingGenesEdgeListMicroglia_Jaccard_pval0p05_cor0p25_noabs.txt')
   
   #microglia all genes
-  WriteFile(MicrogliaGeneAllCorr,corCutOff=0.25,pValCutOff = 0.05,absoluteValue=F,'../../Louvain_Edge_List/Jaccard/AllGenesEdgeListMicroglia_Jaccard_pval0p05_cor0p25_noabs.txt')
+  # WriteFile(MicrogliaGeneAllCorr,corCutOff=0.25,pValCutOff = 0.05,absoluteValue=F,'../../Louvain_Edge_List/Jaccard/AllGenesEdgeListMicroglia_Jaccard_pval0p05_cor0p25_noabs.txt')
   
   #microglia coding genes
-  sortedCor <- sort(MicrogliaGeneCodingCorr$r[upper.tri(MicrogliaGeneCodingCorr$r,diag = F)],decreasing=F)
-  top1milCutOff <- sortedCor[length(sortedCor) - 1e6]
-  WriteFile(MicrogliaGeneCodingCorr,corCutOff=top1milCutOff,pValCutOff = Inf,absoluteValue=F,'../../Louvain_Edge_List/Jaccard/CodingGenesEdgeListMicroglia_Jaccard_top1milpos.txt')
+  # sortedCor <- sort(MicrogliaGeneCodingCorr$r[upper.tri(MicrogliaGeneCodingCorr$r,diag = F)],decreasing=F)
+  # top1milCutOff <- sortedCor[length(sortedCor) - 1e6]
+  # WriteFile(MicrogliaGeneCodingCorr,corCutOff=top1milCutOff,pValCutOff = Inf,absoluteValue=F,'../../Louvain_Edge_List/Jaccard/CodingGenesEdgeListMicroglia_Jaccard_top1milpos.txt')
   
   #microglia all genes
-  sortedCor <- sort(MicrogliaGeneAllCorr$r[upper.tri(MicrogliaGeneAllCorr$r,diag = F)],decreasing=F)
-  top1milCutOff <- sortedCor[length(sortedCor) - 1e6]
-  WriteFile(MicrogliaGeneAllCorr,corCutOff=top1milCutOff,pValCutOff = Inf,absoluteValue=F,'../../Louvain_Edge_List/Jaccard/AllGenesEdgeListMicroglia_Jaccard_top1milpos.txt')
+  # sortedCor <- sort(MicrogliaGeneAllCorr$r[upper.tri(MicrogliaGeneAllCorr$r,diag = F)],decreasing=F)
+  # top1milCutOff <- sortedCor[length(sortedCor) - 1e6]
+  # WriteFile(MicrogliaGeneAllCorr,corCutOff=top1milCutOff,pValCutOff = Inf,absoluteValue=F,'../../Louvain_Edge_List/Jaccard/AllGenesEdgeListMicroglia_Jaccard_top1milpos.txt')
+  
+  
+  WriteFile(MicrogliaGeneCodingCorr,corCutOff=0.2,pValCutOff = Inf,absoluteValue=T,'../../Louvain_Edge_List/Jaccard_Cor0p2/CodingGenesEdgeListMicroglia_Jaccard_cor0p2_abs.txt')
+  WriteFile(MicrogliaGeneAllCorr,corCutOff=0.2,pValCutOff = Inf,absoluteValue=T,'../../Louvain_Edge_List/Jaccard_Cor0p2/AllGenesEdgeListMicroglia_Jaccard_cor0p2_abs.txt')
   
 }

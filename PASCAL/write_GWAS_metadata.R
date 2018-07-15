@@ -4,21 +4,21 @@ library(dplyr)
 GetGWASMetdata <- function(sigClusters){
   GWASMetadata <- read.csv('/local/data/public/zmx21/zmx21_private/GSK/GWAS/GWASMetadata.csv',stringsAsFactors = F)
   
-  # PASCAL_nofilt_Path <- '/local/data/public/zmx21/zmx21_private/GSK/GWAS/PASCAL_results/Old/microglia_gene/'
-  # PASCAL_results_nofilt <- dir(PASCAL_nofilt_Path)
-  # PASCAL_results_nofilt <- PASCAL_results_nofilt[grep('sum.genescores',PASCAL_results_nofilt)]
-  # numSigGenes <- sapply(PASCAL_results_nofilt,function(x) data.table::fread(paste0(PASCAL_nofilt_Path,x)) %>% 
-  #                         dplyr::filter(pvalue < 1e-8) %>% nrow)
+  PASCAL_raw_Path <- '/local/data/public/zmx21/zmx21_private/GSK/GWAS/PASCAL_results/KEGG_Ensembl/'
+  PASCAL_results_raw <- dir(PASCAL_raw_Path)
+  PASCAL_results_raw <- PASCAL_results_raw[grep('sum.genescores',PASCAL_results_raw)]
+  numSigGenes <- sapply(PASCAL_results_raw,function(x) data.table::fread(paste0(PASCAL_raw_Path,x)) %>%
+                          dplyr::filter(pvalue < 1e-8) %>% nrow)
   
-  PASCAL_pathway_path <- '/local/data/public/zmx21/zmx21_private/GSK/GWAS/PASCAL_results/microglia_all_genes/'
-  PASCAL_results_pathway <- dir(PASCAL_pathway_path)
-  PASCAL_results_pathway <- PASCAL_results_pathway[grep('sum.genescores',PASCAL_results_pathway)]
-  numSigGenesIncluded <- sapply(PASCAL_results_pathway,function(x) data.table::fread(paste0(PASCAL_pathway_path,x)) %>% 
+  PASCAL_cluster_coding_path <- '/local/data/public/zmx21/zmx21_private/GSK/GWAS/PASCAL_results2/'
+  PASCAL_results_coding <- dir(PASCAL_cluster_coding_path)
+  PASCAL_results_coding <- PASCAL_results_coding[grep('sum.genescores',PASCAL_results_coding)]
+  numSigGenesIncludedCoding <- sapply(PASCAL_results_coding,function(x) data.table::fread(paste0(PASCAL_cluster_coding_path,x)) %>% 
                                   dplyr::filter(pvalue < 1e-8) %>% nrow)
-  sigGenes <- lapply(PASCAL_results_pathway,function(x) data.table::fread(paste0(PASCAL_pathway_path,x)) %>% 
+  sigGenesCoding <- lapply(PASCAL_results_coding,function(x) data.table::fread(paste0(PASCAL_cluster_coding_path,x)) %>% 
                        dplyr::filter(pvalue < 1e-8) %>% select(gene_id) %>% t() %>% as.vector)
   
-  # SigStudiesStats <- data.frame(N_Sig_Genes = numSigGenes,N_Sig_Genes_In_Network=numSigGenesIncluded)
+  SigStudiesStats <- data.frame(N_Sig_Genes = numSigGenes,N_Sig_Genes_In_Network=numSigGenesIncluded)
   SigStudiesStats <- data.frame(N_Sig_Genes_In_Network=numSigGenesIncluded)
   SigStudiesStats$StudyName <- sapply(rownames(SigStudiesStats),function(x) unlist(strsplit(x,'.sum'))[1])
   SigStudiesStats$StudyName <- sapply(SigStudiesStats$StudyName,function(x) gsub('[.]','_',x))

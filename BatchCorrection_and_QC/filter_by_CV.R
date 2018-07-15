@@ -1,9 +1,14 @@
-SeperateCodingandNonCoding <- function(inputMatrix){
+SeperateCodingandNonCoding <- function(inputMatrix,lncRNAOnly=T){
   library(dplyr)
   source('load_GTF.R')
   bioTypeTable <- ExtractBioType(inputMatrix,table = F)
   codingIDs <- bioTypeTable == 'protein_coding'
-  return(list(coding=inputMatrix[codingIDs,],noncoding=inputMatrix[!codingIDs,]))
+  if(lncRNAOnly){
+    nonCodingIDs <- bioTypeTable == 'lncRNA'
+    return(list(coding=inputMatrix[codingIDs,],noncoding=inputMatrix[nonCodingIDs,]))
+  }else{
+    return(list(coding=inputMatrix[codingIDs,],noncoding=inputMatrix[!codingIDs,]))
+  }
 }
 CalcCV <- function(inputMatrix){
   return(apply(inputMatrix,1,function(x) sd(x)/mean(x)))
@@ -15,7 +20,7 @@ ApplyCVFilter <- function(inputMatrix,percentile){
 
 #Filter genes in batch corrected (or TPM filtered) matrix, according to CV.
 FilterByCV <- function(plots=F,inputPath,outputPath,percentile){
-  source('load_GTF.R')
+  # source('load_GTF.R')
   #Load the all data specified in the inputPath list
   for(i in 1:length(inputPath)){
     invisible(lapply(paste0(inputPath[[i]],dir(inputPath[[i]])),load,environment()))
@@ -205,5 +210,4 @@ FilterByCV <- function(plots=F,inputPath,outputPath,percentile){
   save(BrainTranscriptCVFiltered,file = paste0(outputPath,'/BrainTranscriptCVFiltered.rda'))
   save(list = ls(environment()),file='../../CodeImages/CVFiltering.RData')
 }
-# FilterByCV(plots=F,list('../../Count_Data/Batch_Corrected/','../../Count_Data/TPM_Filtered/'),outputPath = '../../Count_Data/CV_Filtered/',0.5)
-FilterByCV(plots=F,list('../../Count_Data/Batch_Corrected/','../../Count_Data/TPM_Filtered/'),outputPath = '../../Count_Data/CV_Filtered_25/',0.25)
+FilterByCV(plots=F,list('../../Count_Data/Batch_Corrected/','../../Count_Data/TPM_Filtered/'),outputPath = '../../Count_Data/CV_Filtered/',0.5)
