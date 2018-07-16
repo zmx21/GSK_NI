@@ -78,29 +78,34 @@ codingGenes <- hashmap::hashmap(keys = geneGtfTableFull$gene_name,values = ifels
 librariesToRun <- c('KEGG_2016','TRANSFAC_and_JASPAR_PWMs','Jensen_DISEASES')
 
 GetTopPercentileOfEachStudy <- function(){
-  method <- c('CodingGenesMicroglia_Jaccard_pval0p05_cor0p25_abs',
-              'CodingGenesMicroglia_Jaccard_pval0p05_cor0p25_noabs',
-              'CodingGenesMicroglia_Jaccard_top1milpos')
+  # method <- c('CodingGenesMicroglia_Pearson_cor0p2_abs',
+  #             'CodingGenesMicroglia_Jaccard_cor0p2_abs')
+  method <- 'CodingWGCNAUnsigned_Soft4_Size3'
   for(i in 1:length(method)){
     load(paste0('../../Count_Data/PASCAL_Results/',method[i],'.rda'))
     JoinedDfMicroglia <- JoinedDfMicroglia %>% dplyr::arrange(adjPvalue)
     ClusterAnnotResults <- GetClustersAnnotation(JoinedDfMicroglia,codingGenes,geneIdToName,librariesToRun,topPercentile = 0.1,save = F)
-    save(ClusterAnnotResults,file=paste0('../../GWAS/PASCAL_results/filter',i,'.rda'))
+    save(ClusterAnnotResults,file=paste0('../../GWAS/PASCAL_results/Annotation_',method[i],'.rda'))
   }
 }
 GetAnnotationForSignificantClusters <- function(JoinedDfMicroglia,isPath=T){
   if(isPath){
     load(JoinedDfMicroglia)
   }
-  JoinedDfMicroglia <- JoinedDfMicroglia
   ClusterAnnotSigResults <- GetClustersAnnotation(JoinedDfMicroglia %>% filter(adjPvalue < 0.1),codingGenes,
                                                   geneIdToName,librariesToRun,topPercentile = 1,save = F)
   library(gridExtra)
   df <- do.call(rbind,lapply(ClusterAnnotSigResults,function(x) x$df))
   rownames(df) <- as.character(seq(1,nrow(df)))
-  grid.arrange(tableGrob(df %>% 
-                           dplyr::select(adjPvalue,StudyName,Size,Biotype,KEGG_2016.Term,
-                                         KEGG_2016.Overlap,KEGG_2016.Adjusted.P.value)))
+  #Organize annotation result headers
+  df <- df %>% dplyr::arrange(KEGG_2016.Term) %>%
+    dplyr::select(adjP=adjPvalue,Study=StudyName,Size,Biotype,'KEGG Term'=KEGG_2016.Term,
+                  'KEGG Overlap'=KEGG_2016.Overlap,'KEGG P'=KEGG_2016.Adjusted.P.value,
+                  MicrogliaOverlap,Microglia_P,ADOverlap,AD_P)
+  #Append Microglia gene enrichment information
+  
+  
+  grid.arrange(tableGrob(df,theme = ttheme_default(base_size = 9)))
   
   return(ClusterAnnotSigResults)
 }

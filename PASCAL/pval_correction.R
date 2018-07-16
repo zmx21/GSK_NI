@@ -13,7 +13,7 @@ AppendCorrectedPVal <- function(resultDf){
                                             Biotype==allGroups$Biotype[i],
                                             StudyName==allGroups$StudyName[i])
     #Do FDR p-val adj using BH procedure
-    currentDf$adjPvalue <- p.adjust(currentDf$empPvalue,method = 'BH')
+    currentDf$adjPvalue <- p.adjust(currentDf$chi2Pvalue,method = 'BH')
     subGroupDf[[i]] <- currentDf
   }
   return(do.call(rbind,subGroupDf) %>% dplyr::arrange(adjPvalue))

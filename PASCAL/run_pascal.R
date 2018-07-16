@@ -30,7 +30,7 @@ RunPASCAL <- function(geneSetDir,PASCALPath,outPath,type=c('coding','all'),calcG
       system(paste0('mkdir ',outDir))
       settingsName <- gsub(x=geneSets[i],pattern = '.gmt',replacement = '_settings.txt')
       WriteSettingsFile(settingsName,outDir,type = ifelse(grepl(pattern = 'All',x = geneSets[i]),'all','coding'),calcGeneScore=T)
-      cmd <- paste('find ../parsed_studies/*txt | parallel -j 11 ./run_PASCAL_genescore {1}',settingsName,geneSetPath[i],outDir,sep = ' ')
+      cmd <- paste('find ../parsed_studies/*txt | parallel -j 17 --memfree 50G ./run_PASCAL_genescore {1}',settingsName,geneSetPath[i],outDir,sep = ' ')
       system(cmd,intern = T)
     },mc.cores = 1)
   }else{
@@ -39,7 +39,7 @@ RunPASCAL <- function(geneSetDir,PASCALPath,outPath,type=c('coding','all'),calcG
       system(paste0('mkdir ',outDir))
       settingsName <- gsub(x=geneSets[i],pattern = '.gmt',replacement = '_settings.txt')
       WriteSettingsFile(settingsName,outDir,type = ifelse(grepl(pattern = 'All',x = geneSets[i]),'all','coding'),calcGeneScore=F)
-      cmd <- paste('find ../parsed_studies/*txt | parallel -j 11 ./run_PASCAL {1}',settingsName,geneSetPath[i],outDir,sep = ' ')
+      cmd <- paste('find ../parsed_studies/*txt | parallel -j 17 --memfree 50G ./run_PASCAL {1}',settingsName,geneSetPath[i],outDir,sep = ' ')
       system(cmd,intern = T)
     },mc.cores = 1)
   }
