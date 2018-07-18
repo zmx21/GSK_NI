@@ -7,7 +7,6 @@ AppendGeneEnrichment <- function(JoinedDfMicroglia){
   microgliaGenes <- data.table::fread('../../Count_Data/Galatro_Microglia_Core_Genes.txt',header = F)
   microgliaGenes <- unique(microgliaGenes$V2)
   
-  
   kunkel_ad_tbl10 <- data.table::fread('../../Count_Data/AD_Kunkel_tbl10.txt',header = F)
   kunkel_ad_tbl15 <- data.table::fread('../../Count_Data/AD_Kunkel_tbl15.txt',header = F)
   AD_Genes <- unique(c(kunkel_ad_tbl10$V1,kunkel_ad_tbl15$V1))

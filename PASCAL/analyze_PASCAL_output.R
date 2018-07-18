@@ -2,6 +2,7 @@ library(qusage)
 library(dplyr)
 library(ggplot2)
 library(parallel)
+source('annotate_clusters.R')
 source('pval_correction.R')
 source('write_GWAS_metadata.R')
 #Merged result from PASCAL with cluster info
@@ -40,6 +41,12 @@ ParsePASCALFile <- function(resultPaths,clusterPaths){
   joinedDf$GeneNames <- mclapply(joinedDf$Genes,function(x) geneIdToName[[x]],mc.cores = 20)
   source('append_gene_enrichment.R')
   joinedDf <- AppendGeneEnrichment(joinedDf)
+  source('append_open_target.R')
+  joinedDf <- AppendOpenTarget(joinedDf,csvPath = '/local/data/public/zmx21/zmx21_private/GSK/OpenTargets_scores/')
+  # 
+  # famMonoDiseases <- c('familial_ALS','familial_MS','monogenic_AD','monogenic_recessive_PD')
+  # famMonoGenes <- lapply(famMonoDiseases,function(x) data.table::fread(paste0('/local/data/public/zmx21/zmx21_private/GSK/Monogenic_disease/',x,'.txt')) %>% {.$V1})
+  # 
   return(joinedDf)
 }
 
@@ -196,29 +203,61 @@ LoadPASCALTranscriptResults <- function(filter=T){
   return(JoinedDfMicroglia)
 }
 
-JoinedDfMicrogliaJaccard <- LoadPASCALResults(filter=T,c('../../GWAS/PASCAL_results/Jaccard_Cor0p2/CodingGenesMicroglia_Jaccard_cor0p2_abs/',
-                                                  '../../GWAS/PASCAL_results/Jaccard_Cor0p2/AllGenesMicroglia_Jaccard_cor0p2_abs/'),
-                                       c('../../Louvain_results/Jaccard_Cor0p2/CodingGenesMicroglia_Jaccard_cor0p2_abs.gmt',
-                                         '../../Louvain_results/Jaccard_Cor0p2/AllGenesMicroglia_Jaccard_cor0p2_abs.gmt'),sizeLower = 3,sizeUpper = 300)
-JoinedDfMicroglia <- JoinedDfMicrogliaJaccard %>% dplyr::filter(Biotype=='coding')
-save(JoinedDfMicroglia,file='../../Count_Data/PASCAL_Results/CodingGenesMicroglia_Jaccard_cor0p2_abs.rda')
-sigClustersCodingJaccard <- do.call(rbind,lapply(GetAnnotationForSignificantClusters(JoinedDfMicrogliaJaccard %>% dplyr::filter(Biotype=='coding')
-                                                                              ,isPath = F),function(x) x$df))
-sigClustersAllJaccard <- do.call(rbind,lapply(GetAnnotationForSignificantClusters(JoinedDfMicrogliaJaccard %>% dplyr::filter(Biotype=='all')
-                                                                           ,isPath = F),function(x) x$df))
-GetGWASMetdata(rbind(sigClustersCodingJaccard,sigClustersAllJaccard))
+ViewOpenTargetResults <- function(JoinedDfMicroglia,type){
+  round_df <- function(x, digits) {
+    # round all numeric variables
+    # x: data frame 
+    # digits: number of digits to round
+    numeric_columns <- sapply(x, mode) == 'numeric'
+    x[numeric_columns] <-  round(x[numeric_columns], digits)
+    return(x)
+  }
+  
+  if(type=='target'){
+    df <- JoinedDfMicroglia %>% dplyr::select(StudyName,Size,adjPvalue,KEGG=KEGG_2016.Term,'KEGG_Overlap'=KEGG_2016.Overlap,'KEGG_P'=KEGG_2016.Adjusted.P.value,
+                                              contains('target'),-contains('target_Genes'))
+    colnames(df) <- sapply(colnames(df),function(x) gsub(pattern = '_',replacement = '\n',x = x))
+    df <- round_df(df,2)
+    df <- dplyr::arrange(df,KEGG)
+    rownames(df) <- c()
+  }else if(type=='drug'){
+    df <- JoinedDfMicroglia %>% dplyr::select(StudyName,Size,adjPvalue,KEGG=KEGG_2016.Term,'KEGG_Overlap'=KEGG_2016.Overlap,'KEGG_P'=KEGG_2016.Adjusted.P.value,
+                                              contains('drug'),-contains('drug_Genes'))
+    colnames(df) <- sapply(colnames(df),function(x) gsub(pattern = '_',replacement = '\n',x = x))
+    df <- round_df(df,2)
+    df <- dplyr::arrange(df,KEGG)
+    rownames(df) <- c()
+  }
+  grid.arrange(tableGrob(df,theme = ttheme_default(base_size = 9)))
+}
+
+# JoinedDfMicrogliaJaccard <- LoadPASCALResults(filter=T,c('../../GWAS/PASCAL_results/Jaccard_Cor0p2/CodingGenesMicroglia_Jaccard_cor0p2_abs/',
+#                                                   '../../GWAS/PASCAL_results/Jaccard_Cor0p2/AllGenesMicroglia_Jaccard_cor0p2_abs/'),
+#                                        c('../../Louvain_results/Jaccard_Cor0p2/CodingGenesMicroglia_Jaccard_cor0p2_abs.gmt',
+#                                          '../../Louvain_results/Jaccard_Cor0p2/AllGenesMicroglia_Jaccard_cor0p2_abs.gmt'),sizeLower = 3,sizeUpper = 300)
+# JoinedDfMicroglia <- JoinedDfMicrogliaJaccard %>% dplyr::filter(Biotype=='coding')
+# save(JoinedDfMicroglia,file='../../Count_Data/PASCAL_Results/CodingGenesMicroglia_Jaccard_cor0p2_abs.rda')
+# sigClustersCodingJaccard <- do.call(rbind,lapply(GetAnnotationForSignificantClusters(JoinedDfMicrogliaJaccard %>% dplyr::filter(Biotype=='coding')
+#                                                                               ,isPath = F),function(x) x$df))
+# sigClustersAllJaccard <- do.call(rbind,lapply(GetAnnotationForSignificantClusters(JoinedDfMicrogliaJaccard %>% dplyr::filter(Biotype=='all')
+#                                                                            ,isPath = F),function(x) x$df))
+# GetGWASMetdata(rbind(sigClustersCodingJaccard,sigClustersAllJaccard))
 
 
 JoinedDfMicrogliaPearson <- LoadPASCALResults(filter=T,c('../../GWAS/PASCAL_results/Pearson_Cor0p2/CodingGenesMicroglia_Pearson_cor0p2_abs/',
                                                   '../../GWAS/PASCAL_results/Pearson_Cor0p2/AllGenesMicroglia_Pearson_cor0p2_abs/'),
                                        c('../../Louvain_results/Pearson_Cor0p2/CodingGenesMicroglia_Pearson_cor0p2_abs.gmt',
-                                         '../../Louvain_results/Pearson_Cor0p2/AllGenesMicroglia_Pearson_cor0p2_abs.gmt'),sizeLower = 3,sizeUpper = 100)
-JoinedDfMicroglia <- JoinedDfMicrogliaPearson %>% dplyr::filter(Biotype=='coding')
-save(JoinedDfMicroglia,file='../../Count_Data/PASCAL_Results/CodingGenesMicroglia_Pearson_cor0p2_abs.rda')
-sigClustersCodingPearson <- do.call(rbind,lapply(GetAnnotationForSignificantClusters(JoinedDfMicrogliaPearson %>% dplyr::filter(Biotype=='coding')
-                                                                              ,isPath = F),function(x) x$df))
-sigClustersAllPearson <- do.call(rbind,lapply(GetAnnotationForSignificantClusters(JoinedDfMicrogliaPearson %>% dplyr::filter(Biotype=='all')
-                                                                           ,isPath = F),function(x) x$df))
+                                         '../../Louvain_results/Pearson_Cor0p2/AllGenesMicroglia_Pearson_cor0p2_abs.gmt'),sizeLower = 3,sizeUpper = 300)
+save(JoinedDfMicrogliaPearson,file='../../Count_Data/PASCAL_Results/Microglia_Pearson_cor0p2_abs.rda')
+load('../../Count_Data/PASCAL_Results/Microglia_Pearson_cor0p2_abs.rda')
+sigClustersCodingPearson <- GetAnnotationForSignificantClusters(JoinedDfMicrogliaPearson %>% dplyr::filter(Biotype=='coding'),isPath = F)
+save(sigClustersCodingPearson,file='../../Count_Data/PASCAL_Results/sigClusters/sigClustersCodingPearson.rda')
+ViewOpenTargetResults(sigClustersCodingPearson,type='target')
+ViewOpenTargetResults(sigClustersCodingPearson,type='drug')
+sigClustersAllPearson <- GetAnnotationForSignificantClusters(JoinedDfMicrogliaPearson %>% dplyr::filter(Biotype=='all'),isPath = F)
+save(sigClustersAllPearson,file='../../Count_Data/PASCAL_Results/sigClusters/sigClustersAllPearson.rda')
+ViewOpenTargetResults(sigClustersAllPearson,type='target')
+ViewOpenTargetResults(sigClustersAllPearson,type='drug')
 GetGWASMetdata(rbind(sigClustersCodingPearson,sigClustersAllPearson))
 
 
@@ -238,12 +277,18 @@ JoinedDfMicrogliaWGCNAUnsigned <- LoadPASCALResults(filter=T,c('../../GWAS/PASCA
                                                              '../../GWAS/PASCAL_results/WGCNA_size3/AllWGCNAUnsigned_Soft4_Size3//'),
                                                   c('../../GWAS/PASCAL_New/resources/genesets/WGCNA_size3/CodingWGCNAUnsigned_Soft4_Size3.gmt',
                                                     '../../GWAS/PASCAL_New/resources/genesets/WGCNA_size3/AllWGCNAUnsigned_Soft4_Size3.gmt'),sizeLower = 3,sizeUpper = 100)
-JoinedDfMicroglia <- JoinedDfMicrogliaWGCNAUnsigned %>% dplyr::filter(Biotype=='coding')
-save(JoinedDfMicroglia,file='../../Count_Data/PASCAL_Results/CodingWGCNAUnsigned_Soft4_Size3.rda')
-sigClustersCodingWGCNAUnsigned <- do.call(rbind,lapply(GetAnnotationForSignificantClusters(JoinedDfMicrogliaWGCNAUnsigned %>% dplyr::filter(Biotype=='coding')
-                                                                                         ,isPath = F),function(x) x$df))
-sigClustersAllWGCNAUnsigned <- do.call(rbind,lapply(GetAnnotationForSignificantClusters(JoinedDfMicrogliaWGCNAUnsigned %>% dplyr::filter(Biotype=='all')
-                                                                                      ,isPath = F),function(x) x$df))
+save(JoinedDfMicrogliaWGCNAUnsigned,file='../../Count_Data/PASCAL_Results/JoinedDfMicrogliaWGCNAUnsigned.rda')
+
+sigClustersCodingWGCNAUnsigned <- GetAnnotationForSignificantClusters(JoinedDfMicrogliaWGCNAUnsigned %>% dplyr::filter(Biotype=='coding'),isPath = F)
+save(sigClustersCodingWGCNAUnsigned,file='../../Count_Data/PASCAL_Results/sigClusters/sigClustersCodingWGCNAUnsigned.rda')
+
+ViewOpenTargetResults(sigClustersCodingWGCNAUnsigned,type='target')
+ViewOpenTargetResults(sigClustersCodingWGCNAUnsigned,type='drug')
+sigClustersAllWGCNAUnsigned <- GetAnnotationForSignificantClusters(JoinedDfMicrogliaWGCNAUnsigned %>% dplyr::filter(Biotype=='all'),isPath = F)
+save(sigClustersAllWGCNAUnsigned,file='../../Count_Data/PASCAL_Results/sigClusters/sigClustersAllWGCNAUnsigned.rda')
+
+ViewOpenTargetResults(sigClustersAllWGCNAUnsigned,type='target')
+ViewOpenTargetResults(sigClustersAllWGCNAUnsigned,type='drug')
 GetGWASMetdata(rbind(sigClustersCodingWGCNAUnsigned,sigClustersCodingWGCNAUnsigned))
 
 # JoinedDfMicroglia <- LoadPASCALResults(filter=T,c('../../GWAS/PASCAL_results/microglia_all_genes/','../../GWAS/PASCAL_results/microglia_coding_genes/'),
@@ -318,3 +363,18 @@ GetGWASMetdata(rbind(sigClustersCodingWGCNAUnsigned,sigClustersCodingWGCNAUnsign
 # save(JoinedDfMicroglia,file='../../Count_Data/PASCAL_Results/WGCNASigned_Soft4.rda')
 # sigClusters <- do.call(rbind,lapply(GetAnnotationForSignificantClusters(JoinedDfMicroglia,isPath = F),function(x) x$df))
 # GetGWASMetdata(sigClusters)
+
+
+JoinedDfNonNeurologicalPearson <- LoadPASCALResults(filter=T,c('../../GWAS/PASCAL_results_non_neurological/Pearson_Cor0p2_Pathway/CodingGenesMicroglia_Pearson_cor0p2_abs/',
+                                                             '../../GWAS/PASCAL_results_non_neurological/Pearson_Cor0p2_Pathway/AllGenesMicroglia_Pearson_cor0p2_abs/'),
+                                                  c('../../GWAS/PASCAL_New/resources/genesets/Pearson_Cor0p2/CodingGenesMicroglia_Pearson_cor0p2_abs.gmt',
+                                                    '../../GWAS/PASCAL_New/resources/genesets/Pearson_Cor0p2/AllGenesMicroglia_Pearson_cor0p2_abs.gmt'))
+sigClustersNonNeurologicalPearson<- do.call(rbind,lapply(GetAnnotationForSignificantClusters(JoinedDfNonNeurologicalPearson,isPath = F),function(x) x$df))
+
+JoinedDfNonNeurologicalWGCNA <- LoadPASCALResults(filter=T,c('../../GWAS/PASCAL_results_non_neurological/WGCNA_size3/CodingWGCNAUnsigned_Soft4_Size3/',
+                                                        '../../GWAS/PASCAL_results_non_neurological/WGCNA_size3/AllWGCNAUnsigned_Soft4_Size3/'),
+                                       c('../../GWAS/PASCAL_New/resources/genesets/WGCNA_size3/CodingWGCNAUnsigned_Soft4_Size3.gmt',
+                                         '../../GWAS/PASCAL_New/resources/genesets/WGCNA_size3/AllWGCNAUnsigned_Soft4_Size3.gmt'))
+sigClustersNonNeurologicalWGCNA <- do.call(rbind,lapply(GetAnnotationForSignificantClusters(JoinedDfNonNeurologicalWGCNA,isPath = F),function(x) x$df))
+GetGWASMetdata(sigClustersNonNeurologicalWGCNA)
+

@@ -95,11 +95,11 @@ GetAnnotationForSignificantClusters <- function(JoinedDfMicroglia,isPath=T){
   ClusterAnnotSigResults <- GetClustersAnnotation(JoinedDfMicroglia %>% filter(adjPvalue < 0.1),codingGenes,
                                                   geneIdToName,librariesToRun,topPercentile = 1,save = F)
   library(gridExtra)
-  df <- do.call(rbind,lapply(ClusterAnnotSigResults,function(x) x$df))
-  rownames(df) <- as.character(seq(1,nrow(df)))
+  dfFull <- do.call(rbind,lapply(ClusterAnnotSigResults,function(x) x$df))
+  rownames(dfFull) <- as.character(seq(1,nrow(dfFull)))
   #Organize annotation result headers
-  df <- df %>% dplyr::arrange(KEGG_2016.Term) %>%
-    dplyr::select(adjP=adjPvalue,Study=StudyName,Size,Biotype,'KEGG Term'=KEGG_2016.Term,
+  dfFull <- dfFull %>% dplyr::arrange(KEGG_2016.Term) %>% dplyr::mutate('KEGG Term'=sapply(KEGG_2016.Term,function(x) unlist(strsplit(x=x,split='_'))[1]))
+  df <- dfFull %>% dplyr::select(adjP=adjPvalue,Study=StudyName,Size,Biotype,'KEGG Term',
                   'KEGG Overlap'=KEGG_2016.Overlap,'KEGG P'=KEGG_2016.Adjusted.P.value,
                   MicrogliaOverlap,Microglia_P,ADOverlap,AD_P)
   #Append Microglia gene enrichment information
@@ -107,7 +107,7 @@ GetAnnotationForSignificantClusters <- function(JoinedDfMicroglia,isPath=T){
   
   grid.arrange(tableGrob(df,theme = ttheme_default(base_size = 9)))
   
-  return(ClusterAnnotSigResults)
+  return(dfFull)
 }
 GetAnnotationTranscriptClusters <- function(){
   load('../../Count_Data/PASCAL_Results/JoinedDfMicrogliaPathwayTranscript.rda')

@@ -32,8 +32,20 @@ WriteGeneGmt <- function(GmtPath,outFile){
     write(currentString,file=outFile,append = T)
   }
 }
-GmtPath <- '/local/data/public/zmx21/zmx21_private/GSK/Louvain_results/AllMicrogliaTranscripts/AllMicrogliaTranscripts.gmt'
-outFile <- file('/local/data/public/zmx21/zmx21_private/GSK/Louvain_results/AllMicrogliaTranscripts/AllMicrogliaTranscriptsAsGenes.gmt','w')
+# GmtPath <- '/local/data/public/zmx21/zmx21_private/GSK/Louvain_results/AllMicrogliaTranscripts/AllMicrogliaTranscripts.gmt'
+# outFile <- file('/local/data/public/zmx21/zmx21_private/GSK/Louvain_results/AllMicrogliaTranscripts/AllMicrogliaTranscriptsAsGenes.gmt','w')
+# WriteGeneGmt(GmtPath,outFile)
+
+# GmtPath <- '/local/data/public/zmx21/zmx21_private/GSK/Louvain_results/Pearson_Cor0p2/AllPearsonTranscripts/all_transcripts.gmt'
+# outFile <- file('/local/data/public/zmx21/zmx21_private/GSK/Louvain_results/Pearson_Cor0p2/AllTranscriptsMicroglia_Pearson_cor0p2_abs.gmt','w')
+# WriteGeneGmt(GmtPath,outFile)
+# 
+# GmtPath <- '/local/data/public/zmx21/zmx21_private/GSK/Louvain_results/Pearson_Cor0p2/CodingPearsonTranscripts/coding_transcripts.gmt'
+# outFile <- file('/local/data/public/zmx21/zmx21_private/GSK/Louvain_results/Pearson_Cor0p2/CodingTranscriptsMicroglia_Pearson_cor0p2_abs.gmt','w')
+# WriteGeneGmt(GmtPath,outFile)
+
+GmtPath <- '/local/data/public/zmx21/zmx21_private/GSK/WGCNA_clusters/Transcript_Level/CodingWGCNAUnsigned_Soft4_Size3_DeepSplit2.gmt'
+outFile <- file('/local/data/public/zmx21/zmx21_private/GSK/WGCNA_clusters/Transcript_Level/Transcript_As_Genes/CodingWGCNAUnsigned_Soft4_Size3_DeepSplit2.gmt','w')
 WriteGeneGmt(GmtPath,outFile)
 
 
