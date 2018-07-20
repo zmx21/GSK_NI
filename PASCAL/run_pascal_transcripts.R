@@ -60,15 +60,15 @@ RunPASCAL <- function(geneSetDir,PASCALPath,outPath,type=c('coding','all'),calcG
 #           outPath = '../PASCAL_results/Pearson_Cor0p2_Transcripts/',
 #           type = c('coding'),calcGeneScore=T)
 
-RunPASCAL(geneSetDir = './resources/genesets/Pearson_Cor0p2_Transcripts/',
-          PASCALPath = '/local/data/public/zmx21/zmx21_private/GSK/GWAS/PASCAL_New/',
-          outPath = '../PASCAL_results/Pearson_Cor0p2_Transcripts/',
-          type = c('coding'),calcGeneScore=T,study = 'tau.Deming.txt')
-
-# RunPASCAL(geneSetDir = './resources/genesets/WGCNA_size3_transcripts/',
+# RunPASCAL(geneSetDir = './resources/genesets/Pearson_Cor0p2_Transcripts/',
 #           PASCALPath = '/local/data/public/zmx21/zmx21_private/GSK/GWAS/PASCAL_New/',
-#           outPath = '../PASCAL_results/WGCNA_Transcripts/',
-#           type = c('coding'),calcGeneScore=F)
+#           outPath = '../PASCAL_results/Pearson_Cor0p2_Transcripts/',
+#           type = c('coding'),calcGeneScore=T,study = 'tau.Deming.txt')
+
+RunPASCAL(geneSetDir = './resources/genesets/WGCNA_size3_transcripts/',
+          PASCALPath = '/local/data/public/zmx21/zmx21_private/GSK/GWAS/PASCAL_New/',
+          outPath = '../PASCAL_results/WGCNA_size3_transcripts/',
+          type = c('coding'),calcGeneScore=F)
 
 # RunPASCAL(geneSetDir = './resources/genesets/Pearson_Cor0p2_Transcripts/',
 #           PASCALPath = '/local/data/public/zmx21/zmx21_private/GSK/GWAS/PASCAL_New/',

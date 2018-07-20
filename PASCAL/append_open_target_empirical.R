@@ -1,48 +1,55 @@
 library(data.table)
 library(dplyr)
-AppendOpenTarget <- function(JoinedDfMicroglia,csvPath,codingGenesInNetwork,allGenesInNetwork){
-  library(parallel)
+AppendOpenTargetEmpirical <- function(JoinedDfMicroglia,permPath,csvPath,codingGenesInNetwork,allGenesInNetwork){
+  if(all(sapply(JoinedDfMicroglia$GeneNames,length)==1)){
+    JoinedDfMicroglia$GeneNames <- lapply(JoinedDfMicroglia$GeneNames,function(x) unlist(strsplit(x=x,split = " ")))
+  }
   diseases <- c('AD','ALS','MS','OS','PD','SLE')
-  diseaseAssociatationGenes <- lapply(diseases,function(x) data.table::fread(paste0(csvPath,x,'_all.csv')) %>% {.$target.gene_info.symbol})
+  diseaseAssociatationGenes <- lapply(diseases,function(x) data.table::fread(paste0(csvPath,x,'_all.csv')) %>%
+                                        dplyr::select(Genes=target.gene_info.symbol,Score=association_score.overall))
+  names(diseaseAssociatationGenes) <- diseases
   drugTargetGenes <- lapply(diseases,function(x) data.table::fread(paste0(csvPath,x,'_drugs.csv')) %>% {.$target.gene_info.symbol})
+  library(parallel)
   for(i in 1:length(diseases)){
-    print(diseases[i])
     #Get current disease gene list from open target csv file
     curDisease <- diseases[i]
-
+    print(curDisease)
+    
+    curOpenTargetHash <- hashmap::hashmap(keys = diseaseAssociatationGenes[[i]]$Genes,
+                                          values =diseaseAssociatationGenes[[i]]$Score)
+    
     #Find intersect with respective network for hypergeometric calculation
-    numCodingAssociationGenes <- length(intersect(diseaseAssociatationGenes[[i]],codingGenesInNetwork))
     numCodingTargetGenes <- length(intersect(drugTargetGenes[[i]],codingGenesInNetwork))
-    numAllAssociationGenes <- length(intersect(diseaseAssociatationGenes[[i]],allGenesInNetwork))
     numAllTargetGenes <- length(intersect(drugTargetGenes[[i]],allGenesInNetwork))
     
     #Find overlap of genes, and find length of overlap
-    curAssociationGenes <- mclapply(JoinedDfMicroglia$GeneNames,function(x) intersect(x,diseaseAssociatationGenes[[i]]),mc.cores = 10)
+    curAssociationGenes <- mclapply(JoinedDfMicroglia$GeneNames,function(x) intersect(x,diseaseAssociatationGenes[[i]]$Genes),mc.cores = 10)
     curTargetGenes <- mclapply(JoinedDfMicroglia$GeneNames,function(x) intersect(x,drugTargetGenes[[i]]),mc.cores = 10)
     curAssociationOverlap <- sapply(curAssociationGenes,length)
     curTargetOverlap <- sapply(curTargetGenes,length)
     
-    
     Association_P <- rep(NA,nrow(JoinedDfMicroglia))
     Target_P <- rep(NA,nrow(JoinedDfMicroglia))
+    
+    #Load empirical score results.
+    curEmpricalCodingList <- readRDS(paste0(permPath,curDisease,'_coding_perm.rds'))
+    curEmpricalAllList <- readRDS(paste0(permPath,curDisease,'_all_perm.rds'))
+    
     for(j in 1:length(Association_P)){
       curSize <- JoinedDfMicroglia$Size[j]
+      curGeneScore <- sum(curOpenTargetHash[[JoinedDfMicroglia$GeneNames[[j]]]],na.rm = T)
       #Hypergeometirc test for enrichment (upper tail) of genes
       if(JoinedDfMicroglia$Biotype[j] == 'coding'){
-        Association_P[j] <- phyper(q=curAssociationOverlap[j]-1,
-                                 m=numCodingAssociationGenes,
-                                 n=length(codingGenesInNetwork) - numCodingAssociationGenes,
-                                 k=curSize,lower.tail = F)
+        curEmpricalScore <- curEmpricalCodingList[[as.character(curSize)]]
+        Association_P[j] <- sum(curEmpricalScore >= curGeneScore) / length(curEmpricalScore)
         Target_P[j] <- phyper(q=curTargetOverlap[j]-1,
                           m=numCodingTargetGenes,
                           n=length(codingGenesInNetwork) - numCodingTargetGenes,
                           k=curSize,lower.tail = F)
         
       }else{
-        Association_P[j] <- phyper(q=curAssociationOverlap[j]-1,
-                                 m=numAllAssociationGenes,
-                                 n=length(allGenesInNetwork) - numAllAssociationGenes,
-                                 k=curSize,lower.tail = F)
+        curEmpricalScore <- curEmpricalAllList[[as.character(curSize)]]
+        Association_P[j] <- sum(curEmpricalScore >= curGeneScore) / length(curEmpricalScore)
         Target_P[j] <- phyper(q=curTargetOverlap[j]-1,
                           m=numAllTargetGenes,
                           n=length(allGenesInNetwork) - numAllTargetGenes,
@@ -67,3 +74,8 @@ AppendOpenTarget <- function(JoinedDfMicroglia,csvPath,codingGenesInNetwork,allG
   
   return(JoinedDfMicroglia)
 }
+test <- AppendOpenTargetEmpirical(JoinedDfMicroglia = sigClustersCodingPearson,
+                          permPath = '../../Count_Data/OpenTarget/test/',
+                          csvPath='../../OpenTargets_scores/',
+                          codingGenesInNetwork = unique(unlist(JoinedDfMicrogliaPearson %>% dplyr::filter(Biotype=='coding') %>% {.$GeneNames})),
+                          allGenesInNetwork = unique(unlist(JoinedDfMicrogliaPearson %>% dplyr::filter(Biotype=='all') %>% {.$GeneNames})))

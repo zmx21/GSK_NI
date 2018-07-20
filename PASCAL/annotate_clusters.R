@@ -88,11 +88,11 @@ GetTopPercentileOfEachStudy <- function(){
     save(ClusterAnnotResults,file=paste0('../../GWAS/PASCAL_results/Annotation_',method[i],'.rda'))
   }
 }
-GetAnnotationForSignificantClusters <- function(JoinedDfMicroglia,isPath=T){
+GetAnnotationForSignificantClusters <- function(JoinedDfMicroglia,isPath=T,pCutOff=0.05){
   if(isPath){
     load(JoinedDfMicroglia)
   }
-  ClusterAnnotSigResults <- GetClustersAnnotation(JoinedDfMicroglia %>% filter(adjPvalue < 0.1),codingGenes,
+  ClusterAnnotSigResults <- GetClustersAnnotation(JoinedDfMicroglia %>% filter(adjPvalue < pCutOff),codingGenes,
                                                   geneIdToName,librariesToRun,topPercentile = 1,save = F)
   library(gridExtra)
   dfFull <- do.call(rbind,lapply(ClusterAnnotSigResults,function(x) x$df))

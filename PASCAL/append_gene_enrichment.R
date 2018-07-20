@@ -1,9 +1,5 @@
-AppendGeneEnrichment <- function(JoinedDfMicroglia){
+AppendGeneEnrichment <- function(JoinedDfMicroglia,codingGenesInNetwork,allGenesInNetwork){
   library(parallel)
-  load('../../Count_Data/CV_Filtered/MicrogliaGeneCVFiltered.rda')
-  codingGenesInNetwork <- unique(unlist(JoinedDfMicroglia %>% dplyr::filter(Biotype=='coding') %>% {.$GeneNames}))
-  allGenesInNetwork <- unique(unlist(JoinedDfMicroglia %>% dplyr::filter(Biotype=='all') %>% {.$GeneNames}))
-  
   microgliaGenes <- data.table::fread('../../Count_Data/Galatro_Microglia_Core_Genes.txt',header = F)
   microgliaGenes <- unique(microgliaGenes$V2)
   
@@ -35,21 +31,21 @@ AppendGeneEnrichment <- function(JoinedDfMicroglia){
     curSize <- JoinedDfMicroglia$Size[i]
     #Hypergeometirc test for enrichment (upper tail) of genes
     if(JoinedDfMicroglia$Biotype[i] == 'coding'){
-      Microglia_P[i] <- phyper(q=curMicrogliaOverlap,
+      Microglia_P[i] <- phyper(q=curMicrogliaOverlap-1,
                                m=numMicrogliaCodingGenes,
                                n=length(codingGenesInNetwork) - numMicrogliaCodingGenes,
                                k=curSize,lower.tail = F)
-      AD_P[i] <- phyper(q=curADOverlap,
+      AD_P[i] <- phyper(q=curADOverlap-1,
                         m=numADCodingGenes,
                         n=length(codingGenesInNetwork) - numADCodingGenes,
                         k=curSize,lower.tail = F)
       
     }else{
-      Microglia_P[i] <- phyper(q=curMicrogliaOverlap,
+      Microglia_P[i] <- phyper(q=curMicrogliaOverlap-1,
                                m=numMicrogliaAllGenes,
                                n=length(allGenesInNetwork) - numMicrogliaAllGenes,
                                k=curSize,lower.tail = F)
-      AD_P[i] <- phyper(q=curADOverlap,
+      AD_P[i] <- phyper(q=curADOverlap-1,
                         m=numADAllGenes,
                         n=length(allGenesInNetwork) - numADAllGenes,
                         k=curSize,lower.tail = F)
