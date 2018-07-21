@@ -12,7 +12,7 @@ GenerateSizePermutation <- function(openTargetHash,geneList,size){
 
 GeneratePermutations <- function(openTargetHash,geneList,sizes,disease,type){
   numPerm <- 500000
-  result <- mclapply(1:length(sizes),function(i) sapply(1:numPerm,function(x) GenerateSizePermutation(openTargetHash,geneList,sizes[i])),mc.cores = 20)
+  result <- mclapply(1:length(sizes),function(i) sapply(1:numPerm,function(x) GenerateSizePermutation(openTargetHash,geneList,sizes[i])),mc.cores = 30)
   names(result) <- sizes
   saveRDS(result,file = paste0('../../Count_Data/OpenTarget/',disease,'_',type,'_perm.rds'))
 }
@@ -39,7 +39,7 @@ for(i in 1:length(diseaseAssociatationGenes)){
                        type='coding')
   GeneratePermutations(openTargetHash=curOpenTargetHash,
                        sizes = allSizes,
-                       geneList = codingGenesInNetwork,
+                       geneList = allGenesInNetwork,
                        disease = curDisease,
                        type='all')
 }

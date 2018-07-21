@@ -19,7 +19,10 @@ PlotSimilarity <- function(allSigClusters,type){
   }
   if(type=='corr'){
     library(corrplot)
-    corrplot(similiarityMatrix, method = "circle",is.corr = F)
+    rownames(similiarityMatrix) <- paste0(rownames(similiarityMatrix),' (',sapply(allSigClustersGenes,length),')')
+    colnames(similiarityMatrix) <- paste0(colnames(similiarityMatrix),' (',sapply(allSigClustersGenes,length),')')
+    
+    corrplot(similiarityMatrix, method = "circle",is.corr = F,type = 'lower',tl.srt = 45,tl.col = sapply(colnames(similiarityMatrix),function(x) ifelse(substr(start = 2,stop = 2,x=x)=='W','blue','red')))
   }else{
     # ## function to set label color
     # labelCol <- function(x) {
@@ -61,27 +64,28 @@ allSigClusters <- rbind(sigClustersCodingPearson,
                         sigClustersCodingWGCNAUnsigned,
                         sigClustersAllWGCNAUnsigned)
 rownames(allSigClusters) <- clusterNames
-PlotSimilarity(allSigClusters,type='dendro')
+# PlotSimilarity(allSigClusters,type='dendro')
+PlotSimilarity(allSigClusters,type='corr')
 
 ###############################TOP TEN Percent CLUSTERS#####################################3
-load('../../Count_Data/PASCAL_Results/Microglia_Pearson_cor0p2_abs.rda')
-load('../../Count_Data/PASCAL_Results/JoinedDfMicrogliaWGCNAUnsigned.rda')
-top20PearsonCoding <- JoinedDfMicrogliaPearson %>% dplyr::filter(Biotype=='coding') %>% dplyr::arrange(adjPvalue) %>%{.[1:20,]}
-top20PearsonAll <- JoinedDfMicrogliaPearson %>% dplyr::filter(Biotype=='all') %>% dplyr::arrange(adjPvalue) %>%{.[1:20,]}
-
-top20WGCNACoding <- JoinedDfMicrogliaWGCNAUnsigned %>% dplyr::filter(Biotype=='coding') %>% dplyr::arrange(adjPvalue) %>%{.[1:20,]}
-top20WGCNAAll <- JoinedDfMicrogliaWGCNAUnsigned %>% dplyr::filter(Biotype=='all') %>% dplyr::arrange(adjPvalue) %>%{.[1:20,]}
-
-clusterNames <- c(paste0('CP',1:nrow(top20PearsonCoding)),
-                  paste0('AP',1:nrow(top20PearsonAll)),
-                  paste0('CW',1:nrow(top20WGCNACoding)),
-                  paste0('AW',1:nrow(top20WGCNAAll)))
-top20Clusters <- rbind(top20PearsonCoding,
-                        top20PearsonAll,
-                        top20WGCNACoding,
-                        top20WGCNAAll)
-rownames(top20Clusters) <- clusterNames
-PlotSimilarity(top20Clusters,type='dendro')
+# load('../../Count_Data/PASCAL_Results/Microglia_Pearson_cor0p2_abs.rda')
+# load('../../Count_Data/PASCAL_Results/JoinedDfMicrogliaWGCNAUnsigned.rda')
+# top20PearsonCoding <- JoinedDfMicrogliaPearson %>% dplyr::filter(Biotype=='coding') %>% dplyr::arrange(adjPvalue) %>%{.[1:20,]}
+# top20PearsonAll <- JoinedDfMicrogliaPearson %>% dplyr::filter(Biotype=='all') %>% dplyr::arrange(adjPvalue) %>%{.[1:20,]}
+# 
+# top20WGCNACoding <- JoinedDfMicrogliaWGCNAUnsigned %>% dplyr::filter(Biotype=='coding') %>% dplyr::arrange(adjPvalue) %>%{.[1:20,]}
+# top20WGCNAAll <- JoinedDfMicrogliaWGCNAUnsigned %>% dplyr::filter(Biotype=='all') %>% dplyr::arrange(adjPvalue) %>%{.[1:20,]}
+# 
+# clusterNames <- c(paste0('CP',1:nrow(top20PearsonCoding)),
+#                   paste0('AP',1:nrow(top20PearsonAll)),
+#                   paste0('CW',1:nrow(top20WGCNACoding)),
+#                   paste0('AW',1:nrow(top20WGCNAAll)))
+# top20Clusters <- rbind(top20PearsonCoding,
+#                         top20PearsonAll,
+#                         top20WGCNACoding,
+#                         top20WGCNAAll)
+# rownames(top20Clusters) <- clusterNames
+# PlotSimilarity(top20Clusters,type='dendro')
 
 
 #Monogenic genes

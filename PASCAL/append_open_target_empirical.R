@@ -33,8 +33,10 @@ AppendOpenTargetEmpirical <- function(JoinedDfMicroglia,permPath,csvPath,codingG
     
     #Load empirical score results.
     curEmpricalCodingList <- readRDS(paste0(permPath,curDisease,'_coding_perm.rds'))
-    curEmpricalAllList <- readRDS(paste0(permPath,curDisease,'_all_perm.rds'))
-    
+    if(any(JoinedDfMicroglia$Biotype=='all')){
+      curEmpricalAllList <- readRDS(paste0(permPath,curDisease,'_all_perm.rds'))
+    }
+
     for(j in 1:length(Association_P)){
       curSize <- JoinedDfMicroglia$Size[j]
       curGeneScore <- sum(curOpenTargetHash[[JoinedDfMicroglia$GeneNames[[j]]]],na.rm = T)
@@ -74,8 +76,14 @@ AppendOpenTargetEmpirical <- function(JoinedDfMicroglia,permPath,csvPath,codingG
   
   return(JoinedDfMicroglia)
 }
-test <- AppendOpenTargetEmpirical(JoinedDfMicroglia = sigClustersCodingPearson,
-                          permPath = '../../Count_Data/OpenTarget/test/',
-                          csvPath='../../OpenTargets_scores/',
-                          codingGenesInNetwork = unique(unlist(JoinedDfMicrogliaPearson %>% dplyr::filter(Biotype=='coding') %>% {.$GeneNames})),
-                          allGenesInNetwork = unique(unlist(JoinedDfMicrogliaPearson %>% dplyr::filter(Biotype=='all') %>% {.$GeneNames})))
+# test <- AppendOpenTargetEmpirical(JoinedDfMicroglia = sigClustersCodingPearson,
+#                           permPath = '../../Count_Data/OpenTarget/test/',
+#                           csvPath='../../OpenTargets_scores/',
+#                           codingGenesInNetwork = unique(unlist(JoinedDfMicrogliaPearson %>% dplyr::filter(Biotype=='coding') %>% {.$GeneNames})),
+#                           allGenesInNetwork = unique(unlist(JoinedDfMicrogliaPearson %>% dplyr::filter(Biotype=='all') %>% {.$GeneNames})))
+
+# test <- AppendOpenTargetEmpirical(JoinedDfMicroglia = sigClustersAllPearson,
+#                           permPath = '../../Count_Data/OpenTarget/test/',
+#                           csvPath='../../OpenTargets_scores/',
+#                           codingGenesInNetwork = unique(unlist(JoinedDfMicrogliaPearson %>% dplyr::filter(Biotype=='coding') %>% {.$GeneNames})),
+#                           allGenesInNetwork = unique(unlist(JoinedDfMicrogliaPearson %>% dplyr::filter(Biotype=='all') %>% {.$GeneNames})))
