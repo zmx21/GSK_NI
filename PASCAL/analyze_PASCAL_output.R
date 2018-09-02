@@ -38,25 +38,28 @@ ParsePASCALFile <- function(resultPaths,clusterPaths,appendInfo=T,empirical){
   load(file='../../Count_Data/geneGtfTableFull.rda')
   geneIdToName <- hashmap::hashmap(keys = geneGtfTableFull$gene_id,values = geneGtfTableFull$gene_name)
   library(parallel)
-  joinedDf$GeneNames <- mclapply(joinedDf$Genes,function(x) geneIdToName[[x]],mc.cores = 20)
+  joinedDf$GeneNames <- lapply(joinedDf$Genes,function(x) geneIdToName[[x]])
   codingGenesInNetwork <- unique(unlist(joinedDf %>% dplyr::filter(Biotype=='coding') %>% {.$GeneNames}))
   allGenesInNetwork <- unique(unlist(joinedDf %>% dplyr::filter(Biotype=='all') %>% {.$GeneNames}))
   
+  #Append additional information
   if(appendInfo){
+    #Append microglia gene enrichment
     source('append_gene_enrichment.R')
     joinedDf <- AppendGeneEnrichment(joinedDf,codingGenesInNetwork=codingGenesInNetwork,allGenesInNetwork=allGenesInNetwork)
+    #Appen Open Target enrichment, based on empirical or hypergeometric.
     if(empirical){
       source('append_open_target_empirical.R')
       joinedDf <- AppendOpenTargetEmpirical(joinedDf,
                                             permPath = '../../Count_Data/OpenTarget/',
-                                            csvPath = '/local/data/public/zmx21/zmx21_private/GSK/OpenTargets_scores/',
+                                            csvPath = '../../OpenTargets_scores/',
                                             codingGenesInNetwork=codingGenesInNetwork,
                                             allGenesInNetwork=allGenesInNetwork)
       
     }else{
       source('append_open_target.R')
       joinedDf <- AppendOpenTarget(joinedDf,
-                                   csvPath = '/local/data/public/zmx21/zmx21_private/GSK/OpenTargets_scores/',
+                                   csvPath = '../../OpenTargets_scores/',
                                    codingGenesInNetwork=codingGenesInNetwork,
                                    allGenesInNetwork=allGenesInNetwork)
       
@@ -73,7 +76,7 @@ GetPathToPASCALResults <- function(PASCALResultPath){
   return(allStudiesPath)
 }
 
-
+#Plots of p-value distribution at different levels
 ConstructPlots <- function(JoinedDfMicroglia){
   library(egg)
   
@@ -159,6 +162,7 @@ ConstructPlots <- function(JoinedDfMicroglia){
   #P values against study name
   
 }
+#compare distribution of true p-value and permuted network p-value of GWAS 
 CompareTrueWithRandom <- function(global=F){
   source('pval_correction.R')
   allStudiesMicrogliaPath <- GetPathToPASCALResults('../../GWAS/PASCAL_results/microglia_gene/')
@@ -187,6 +191,8 @@ CompareTrueWithRandom <- function(global=F){
   }
 }
 
+#Main function, which loads file output of PASCAL, and construct a dataframe. 
+#option allows append other info (KEGG, Open Target), and Open Target can be generated empirically.
 LoadPASCALResults <- function(filter=T,resultPaths,clusterPaths,sizeLower=10,sizeUpper=200,appendInfo=T,empirical=F){
   source('pval_correction.R')
   microgliaAllGenesPath <- GetPathToPASCALResults(resultPaths[1])
@@ -204,7 +210,7 @@ LoadPASCALResults <- function(filter=T,resultPaths,clusterPaths,sizeLower=10,siz
   }
   return(JoinedDfMicroglia)
 }
-
+#Same as LoadPASCALResults, but for transcripts
 LoadPASCALTranscriptResults <- function(filter=T){
   source('pval_correction.R')
   microgliaAllGenesPath <- GetPathToPASCALResults('../../GWAS/PASCAL_results/microglia_coding_transcripts/')
@@ -217,7 +223,7 @@ LoadPASCALTranscriptResults <- function(filter=T){
   }
   return(JoinedDfMicroglia)
 }
-
+#Append OpenTarget results to an existing dataframe
 ViewOpenTargetResults <- function(JoinedDfMicroglia,type,empirical=F){
   round_df <- function(x, digits) {
     # round all numeric variables
@@ -227,6 +233,7 @@ ViewOpenTargetResults <- function(JoinedDfMicroglia,type,empirical=F){
     x[numeric_columns] <-  round(x[numeric_columns], digits)
     return(x)
   }
+  #Append empricialy results if specified.
   if(empirical){
     source('append_open_target_empirical.R')
     JoinedDfMicroglia <- JoinedDfMicroglia %>% dplyr::select(-contains('_drug_P'),
@@ -241,10 +248,11 @@ ViewOpenTargetResults <- function(JoinedDfMicroglia,type,empirical=F){
     
     JoinedDfMicroglia <- AppendOpenTargetEmpirical(JoinedDfMicroglia,
                                                    permPath = '../../Count_Data/OpenTarget/',
-                                                   csvPath = '/local/data/public/zmx21/zmx21_private/GSK/OpenTargets_scores/',
+                                                   csvPath = '../../OpenTargets_scores/',
                                                    codingGenesInNetwork=codingGenesInNetwork,
                                                    allGenesInNetwork=allGenesInNetwork)
   }
+  #Construct table to show results, along with KEGG Term.
   if(type=='target'){
     df <- JoinedDfMicroglia %>% dplyr::select(StudyName,Size,adjPvalue,'KEGG_Term'=KEGG_2016.Term,'KEGG_Overlap'=KEGG_2016.Overlap,'KEGG_P'=KEGG_2016.Adjusted.P.value,
                                               Microglia_Overlap=MicrogliaOverlap,Microglia_P,
@@ -351,29 +359,44 @@ ViewOpenTargetResults <- function(JoinedDfMicroglia,type,empirical=F){
 
 # JoinedDfNonNeurologicalPearson <- LoadPASCALResults(filter=T,c('../../GWAS/PASCAL_results_non_neurological/Pearson_Cor0p2_Pathway/CodingGenesMicroglia_Pearson_cor0p2_abs/',
 #                                                              '../../GWAS/PASCAL_results_non_neurological/Pearson_Cor0p2_Pathway/AllGenesMicroglia_Pearson_cor0p2_abs/'),
-#                                                   c('../../GWAS/PASCAL_New/resources/genesets/Pearson_Cor0p2/CodingGenesMicroglia_Pearson_cor0p2_abs.gmt',
-#                                                     '../../GWAS/PASCAL_New/resources/genesets/Pearson_Cor0p2/AllGenesMicroglia_Pearson_cor0p2_abs.gmt'))
-# sigClustersNonNeurologicalPearson<- do.call(rbind,lapply(GetAnnotationForSignificantClusters(JoinedDfNonNeurologicalPearson,isPath = F),function(x) x$df))
+#                                                   c('../../genesets/Pearson_Cor0p2/CodingGenesMicroglia_Pearson_cor0p2_abs.gmt',
+#                                                     '../../genesets/Pearson_Cor0p2/AllGenesMicroglia_Pearson_cor0p2_abs.gmt'),sizeLower = 3,sizeUpper = 300,appendInfo = T,empirical = T)
 # 
+# save(JoinedDfNonNeurologicalPearson,file='../../Count_Data/PASCAL_Results/JoinedDfNonNeurologicalPearsonEmp.rda')
+# 
+# sigClustersNonNeurologicalPearsonCoding <- GetAnnotationForSignificantClusters(JoinedDfNonNeurologicalPearson %>% dplyr::filter(Biotype=='coding'),isPath = F)
+# save(sigClustersNonNeurologicalPearsonCoding,file='../../Count_Data/PASCAL_Results/sigClusters/sigClustersNonNeurologicalPearsonCoding.rda')
+# 
+# sigClustersNonNeurologicalPearsonAll<- GetAnnotationForSignificantClusters(JoinedDfNonNeurologicalPearson %>% dplyr::filter(Biotype=='all'),isPath = F)
+# save(sigClustersNonNeurologicalPearsonAll,file='../../Count_Data/PASCAL_Results/sigClusters/sigClustersNonNeurologicalPearsonAll.rda')
+
 # JoinedDfNonNeurologicalWGCNA <- LoadPASCALResults(filter=T,c('../../GWAS/PASCAL_results_non_neurological/WGCNA_size3/CodingWGCNAUnsigned_Soft4_Size3/',
 #                                                         '../../GWAS/PASCAL_results_non_neurological/WGCNA_size3/AllWGCNAUnsigned_Soft4_Size3/'),
-#                                        c('../../GWAS/PASCAL_New/resources/genesets/WGCNA_size3/CodingWGCNAUnsigned_Soft4_Size3.gmt',
-#                                          '../../GWAS/PASCAL_New/resources/genesets/WGCNA_size3/AllWGCNAUnsigned_Soft4_Size3.gmt'))
-# sigClustersNonNeurologicalWGCNA <- do.call(rbind,lapply(GetAnnotationForSignificantClusters(JoinedDfNonNeurologicalWGCNA,isPath = F),function(x) x$df))
+#                                        c('../../genesets/WGCNA_size3//CodingWGCNAUnsigned_Soft4_Size3.gmt',
+#                                          '../../genesets/WGCNA_size3/AllWGCNAUnsigned_Soft4_Size3.gmt'),sizeLower = 3,sizeUpper = 300,appendInfo = T,empirical = T)
+# save(JoinedDfNonNeurologicalWGCNA,file='../../Count_Data/PASCAL_Results/JoinedDfNonNeurologicalWGCNAEmp.rda')
+# sigClustersNonNeurologicalWGCNACoding <- GetAnnotationForSignificantClusters(JoinedDfNonNeurologicalWGCNA %>% dplyr::filter(Biotype=='coding'),isPath = F)
+# save(sigClustersNonNeurologicalWGCNACoding,file='../../Count_Data/PASCAL_Results/sigClusters/sigClustersNonNeurologicalWGCNACoding.rda')
+# sigClustersNonNeurologicalWGCNAAll <- GetAnnotationForSignificantClusters(JoinedDfNonNeurologicalWGCNA %>% dplyr::filter(Biotype=='all'),isPath = F)
+# save(sigClustersNonNeurologicalWGCNAAll,file='../../Count_Data/PASCAL_Results/sigClusters/sigClustersNonNeurologicalWGCNAAll.rda')
+
+
 # GetGWASMetdata(sigClustersNonNeurologicalWGCNA)
 # 
 
 ###################PEARSON TRANSCRIPT################################
-# JoinedDfMicrogliaPearsonTranscripts <- LoadPASCALResults(filter=T,c('../../GWAS/PASCAL_results/Pearson_Cor0p2_Transcripts/CodingTranscriptsMicroglia_Pearson_cor0p2_abs/'),
-#                                               c('../../Louvain_results/Pearson_Cor0p2/CodingTranscriptsMicroglia_Pearson_cor0p2_abs.gmt'),sizeLower = 3,sizeUpper = 300,appendInfo = F)
+# JoinedDfMicrogliaPearsonTranscripts <- LoadPASCALResults(filter=T,c('../../GWAS/PASCAL_results/Pearson_Cor0p2_Transcripts/CodingTranscriptsMicroglia_Pearson_cor0p2_abs/',
+#                                                                     '../../GWAS/PASCAL_results/Pearson_Cor0p2_Transcripts/AllTranscriptsMicroglia_Pearson_cor0p2_abs/'),
+#                                               c('../../genesets/Pearson_Cor0p2_Transcripts/CodingTranscriptsMicroglia_Pearson_cor0p2_abs.gmt',
+#                                                 '../../genesets/Pearson_Cor0p2_Transcripts/AllTranscriptsMicroglia_Pearson_cor0p2_abs.gmt'),sizeLower = 3,sizeUpper = 300,appendInfo = F)
 # save(JoinedDfMicrogliaPearsonTranscripts,file='../../Count_Data/PASCAL_Results/JoinedDfMicrogliaPearsonTranscripts.rda')
 # codingGenesInNetworkTranscripts <- unique(unlist(JoinedDfMicrogliaPearsonTranscripts %>% dplyr::filter(Biotype=='coding') %>% {.$GeneNames}))
 # allGenesInNetworkTranscripts <- unique(unlist(JoinedDfMicrogliaPearsonTranscripts %>% dplyr::filter(Biotype=='all') %>% {.$GeneNames}))
-# sigClustersCodingPearsonTranscripts <- JoinedDfMicrogliaPearsonTranscripts %>% dplyr::filter(adjPvalue<0.05) %>%
+# sigClustersCodingPearsonTranscripts <- JoinedDfMicrogliaPearsonTranscripts %>% dplyr::filter(adjPvalue<0.05 & Biotype=='coding') %>%
 # {AppendOpenTarget(JoinedDfMicroglia = .,
 #                   csvPath = '/local/data/public/zmx21/zmx21_private/GSK/OpenTargets_scores/',
 #                   codingGenesInNetwork=codingGenesInNetworkTranscripts,
-#                   allGenesInNetwork=allGenesInNetworkTranscripts)} %>% 
+#                   allGenesInNetwork=allGenesInNetworkTranscripts)} %>%
 #                   {AppendGeneEnrichment(JoinedDfMicroglia = .,
 #                                         codingGenesInNetwork=codingGenesInNetworkTranscripts,
 #                                         allGenesInNetwork=allGenesInNetworkTranscripts)}
@@ -381,6 +404,18 @@ ViewOpenTargetResults <- function(JoinedDfMicroglia,type,empirical=F){
 # sigClustersCodingPearsonTranscripts <- GetAnnotationForSignificantClusters(sigClustersCodingPearsonTranscripts,isPath = F)
 # save(sigClustersCodingPearsonTranscripts,file='../../Count_Data/PASCAL_Results/sigClusters/sigClustersCodingPearsonTranscripts.rda')
 # 
+# sigClustersAllPearsonTranscripts <- JoinedDfMicrogliaPearsonTranscripts %>% dplyr::filter(adjPvalue<0.05 & Biotype=='all') %>%
+# {AppendOpenTarget(JoinedDfMicroglia = .,
+#                   csvPath = '/local/data/public/zmx21/zmx21_private/GSK/OpenTargets_scores/',
+#                   codingGenesInNetwork=codingGenesInNetworkTranscripts,
+#                   allGenesInNetwork=allGenesInNetworkTranscripts)} %>%
+#                   {AppendGeneEnrichment(JoinedDfMicroglia = .,
+#                                         codingGenesInNetwork=codingGenesInNetworkTranscripts,
+#                                         allGenesInNetwork=allGenesInNetworkTranscripts)}
+# 
+# sigClustersAllPearsonTranscripts <- GetAnnotationForSignificantClusters(sigClustersAllPearsonTranscripts,isPath = F)
+# save(sigClustersAllPearsonTranscripts,file='../../Count_Data/PASCAL_Results/sigClusters/sigClustersAllPearsonTranscripts.rda')
+
 # ViewOpenTargetResults(sigClustersCodingPearsonTranscripts,type = 'target')
 # ViewOpenTargetResults(sigClustersCodingPearsonTranscripts,type = 'drug')
 
@@ -411,9 +446,9 @@ ViewOpenTargetResults <- function(JoinedDfMicroglia,type,empirical=F){
 # load('../../Count_Data/PASCAL_Results/Microglia_Pearson_cor0p2_abs.rda')
 
 
-JoinedDfMicrogliaPearson <- LoadPASCALResults(filter=T,c('../../GWAS/PASCAL_results/Pearson_Cor0p2/AllGenesMicroglia_Pearson_cor0p2_abs/'),
-                                        c('../../Louvain_results/Pearson_Cor0p2/AllGenesMicroglia_Pearson_cor0p2_abs.gmt'),sizeLower = 3,sizeUpper = 300,empirical = T)
-save(JoinedDfMicrogliaPearson,file='../../Count_Data/PASCAL_Results/Microglia_Pearson_cor0p2_absAllEmp.rda')
+# JoinedDfMicrogliaPearson <- LoadPASCALResults(filter=T,c('../../GWAS/PASCAL_results/Pearson_Cor0p2/AllGenesMicroglia_Pearson_cor0p2_abs/'),
+#                                         c('../../Louvain_results/Pearson_Cor0p2/AllGenesMicroglia_Pearson_cor0p2_abs.gmt'),sizeLower = 3,sizeUpper = 300,empirical = T)
+# save(JoinedDfMicrogliaPearson,file='../../Count_Data/PASCAL_Results/Microglia_Pearson_cor0p2_absAllEmp.rda')
 
 
 # PearsonOpenTargetSig <- JoinedDfMicrogliaPearson %>%
@@ -434,19 +469,55 @@ save(JoinedDfMicrogliaPearson,file='../../Count_Data/PASCAL_Results/Microglia_Pe
 
 # load('../../Count_Data/PASCAL_Results/JoinedDfMicrogliaWGCNAUnsigned.rda')
 
-load('../../Count_Data/PASCAL_Results/JoinedDfMicrogliaWGCNAUnsigned_AllEmp.rda')
-WGCNAOpenTargetSig <- JoinedDfMicrogliaWGCNAUnsigned %>%
-  dplyr::filter(adjPvalue > 0.05) %>%
-  dplyr::filter(AD_target_P < 0.05,ALS_target_P < 0.05 ,MS_target_P < 0.05 ,PD_target_P < 0.05) %>%
-  dplyr::arrange(AD_target_P,ALS_target_P,MS_target_P,PD_target_P) %>% dplyr::distinct(Name,.keep_all=T) %>%
-  {GetAnnotationForSignificantClusters(.,isPath = F,pCutOff = 1)}
-for(i in 1:nrow(WGCNAOpenTargetSig)){
-  WGCNAOpenTargetSig$StudyName[i] <- dplyr::filter(JoinedDfMicrogliaWGCNAUnsigned,Name==WGCNAOpenTargetSig$Name[i]) %>%
-    dplyr::arrange(adjPvalue) %>% {.$StudyName[1]}
-  WGCNAOpenTargetSig$adjPvalue[i] <- dplyr::filter(JoinedDfMicrogliaWGCNAUnsigned,Name==WGCNAOpenTargetSig$Name[i]) %>%
-    dplyr::arrange(adjPvalue) %>% {.$adjPvalue[1]}
-}
-WGCNAOpenTargetSig <- WGCNAOpenTargetSig %>% dplyr::filter(adjPvalue > 0.05)
+# load('../../Count_Data/PASCAL_Results/JoinedDfMicrogliaWGCNAUnsigned_AllEmp.rda')
+# WGCNAOpenTargetSig <- JoinedDfMicrogliaWGCNAUnsigned %>%
+#   dplyr::filter(adjPvalue > 0.05) %>%
+#   dplyr::filter(AD_target_P < 0.05,ALS_target_P < 0.05 ,MS_target_P < 0.05 ,PD_target_P < 0.05) %>%
+#   dplyr::arrange(AD_target_P,ALS_target_P,MS_target_P,PD_target_P) %>% dplyr::distinct(Name,.keep_all=T) %>%
+#   {GetAnnotationForSignificantClusters(.,isPath = F,pCutOff = 1)}
+# for(i in 1:nrow(WGCNAOpenTargetSig)){
+#   WGCNAOpenTargetSig$StudyName[i] <- dplyr::filter(JoinedDfMicrogliaWGCNAUnsigned,Name==WGCNAOpenTargetSig$Name[i]) %>%
+#     dplyr::arrange(adjPvalue) %>% {.$StudyName[1]}
+#   WGCNAOpenTargetSig$adjPvalue[i] <- dplyr::filter(JoinedDfMicrogliaWGCNAUnsigned,Name==WGCNAOpenTargetSig$Name[i]) %>%
+#     dplyr::arrange(adjPvalue) %>% {.$adjPvalue[1]}
+# }
+# WGCNAOpenTargetSig <- WGCNAOpenTargetSig %>% dplyr::filter(adjPvalue > 0.05)
 # ViewOpenTargetResults(WGCNAOpenTargetSig %>% dplyr::filter(Biotype=='coding'),type = 'target')
-ViewOpenTargetResults(WGCNAOpenTargetSig %>% dplyr::filter(Biotype=='all'),type = 'target',empirical = T)
+# ViewOpenTargetResults(WGCNAOpenTargetSig %>% dplyr::filter(Biotype=='all'),type = 'target',empirical = T)
 
+
+# JoinedDfMicrogliaPearson <- LoadPASCALResults(filter=T,c('../../GWAS/PASCAL_results/Pearson_Cor0p2/CodingGenesMicroglia_Pearson_cor0p2_abs/',
+#                                                   '../../GWAS/PASCAL_results/Pearson_Cor0p2/AllGenesMicroglia_Pearson_cor0p2_abs/'),
+#                                        c('../../genesets/Pearson_Cor0p2/CodingGenesMicroglia_Pearson_cor0p2_abs.gmt',
+#                                          '../../genesets/Pearson_Cor0p2/Pearson_Cor0p2/AllGenesMicroglia_Pearson_cor0p2_abs.gmt'),sizeLower = 3,sizeUpper = 300,appendInfo = T,empirical = T)
+# 
+# saveRDS(JoinedDfMicrogliaPearson,file='../../Count_Data/PASCAL_Results/Empricial_Df/Microglia_Pearson_cor0p2_abs.rds')
+# 
+# JoinedDfMicrogliaWGCNAUnsigned <- LoadPASCALResults(filter=T,c('../../GWAS/PASCAL_results/WGCNA_size3/CodingWGCNAUnsigned_Soft4_Size3//',
+#                                                              '../../GWAS/PASCAL_results/WGCNA_size3/AllWGCNAUnsigned_Soft4_Size3//'),
+#                                                   c('../../genesets/WGCNA_size3/CodingWGCNAUnsigned_Soft4_Size3.gmt',
+#                                                     '../../genesets/WGCNA_size3/AllWGCNAUnsigned_Soft4_Size3.gmt'),sizeLower = 3,sizeUpper = 100,appendInfo = T,empirical = T)
+# saveRDS(JoinedDfMicrogliaWGCNAUnsigned,file='../../Count_Data/PASCAL_Results/Empricial_Df/JoinedDfMicrogliaWGCNAUnsigned.rds')
+# 
+# JoinedDfNonNeurologicalPearson <- LoadPASCALResults(filter=T,c('../../GWAS/PASCAL_results_non_neurological/Pearson_Cor0p2_Pathway/CodingGenesMicroglia_Pearson_cor0p2_abs/',
+#                                                              '../../GWAS/PASCAL_results_non_neurological/Pearson_Cor0p2_Pathway/AllGenesMicroglia_Pearson_cor0p2_abs/'),
+#                                                   c('../../genesets/Pearson_Cor0p2/CodingGenesMicroglia_Pearson_cor0p2_abs.gmt',
+#                                                     '../../genesets/Pearson_Cor0p2/AllGenesMicroglia_Pearson_cor0p2_abs.gmt'),sizeLower = 3,sizeUpper = 300,appendInfo = T,empirical = T)
+# 
+# saveRDS(JoinedDfNonNeurologicalPearson,file='../../Count_Data/PASCAL_Results/Empricial_Df/JoinedDfNonNeurologicalPearson.rds')
+# 
+# JoinedDfNonNeurologicalWGCNA <- LoadPASCALResults(filter=T,c('../../GWAS/PASCAL_results_non_neurological/WGCNA_size3/CodingWGCNAUnsigned_Soft4_Size3/',
+#                                                         '../../GWAS/PASCAL_results_non_neurological/WGCNA_size3/AllWGCNAUnsigned_Soft4_Size3/'),
+#                                        c('../../genesets/WGCNA_size3//CodingWGCNAUnsigned_Soft4_Size3.gmt',
+#                                          '../../genesets/WGCNA_size3/AllWGCNAUnsigned_Soft4_Size3.gmt'),sizeLower = 3,sizeUpper = 300,appendInfo = T,empirical = T)
+# saveRDS(JoinedDfNonNeurologicalWGCNA,file='../../Count_Data/PASCAL_Results/Empricial_Df/JoinedDfNonNeurologicalWGCNA.rds')
+# 
+# JoinedDfMicrogliaPearsonTranscripts <- LoadPASCALResults(filter=T,c('../../GWAS/PASCAL_results/Pearson_Cor0p2_Transcripts/CodingTranscriptsMicroglia_Pearson_cor0p2_abs/',
+#                                                                     '../../GWAS/PASCAL_results/Pearson_Cor0p2_Transcripts/AllTranscriptsMicroglia_Pearson_cor0p2_abs/'),
+#                                               c('../../genesets/Pearson_Cor0p2_Transcripts/CodingTranscriptsMicroglia_Pearson_cor0p2_abs.gmt',
+#                                                 '../../genesets/Pearson_Cor0p2_Transcripts/AllTranscriptsMicroglia_Pearson_cor0p2_abs.gmt'),sizeLower = 3,sizeUpper = 300,appendInfo = T,empirical = T)
+# saveRDS(JoinedDfMicrogliaPearsonTranscripts,file='../../Count_Data/PASCAL_Results/Empricial_Df/JoinedDfMicrogliaPearsonTranscripts.rds')
+# 
+# JoinedDfMicrogliaWGCNATranscripts <- LoadPASCALResults(filter=T,c('../../GWAS/PASCAL_results/WGCNA_size3_transcripts/CodingWGCNAUnsigned_Soft4_Size3_DeepSplit2/'),
+#                                                          c('../../genesets/WGCNA_size3_transcripts/CodingWGCNAUnsigned_Soft4_Size3_DeepSplit2.gmt'),sizeLower = 3,sizeUpper = 300,appendInfo = T,empirical = T)
+# saveRDS(JoinedDfMicrogliaWGCNATranscripts,file='../../Count_Data/PASCAL_Results/Empricial_Df/JoinedDfMicrogliaWGCNATranscripts.rds')

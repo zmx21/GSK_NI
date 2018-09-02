@@ -1,3 +1,8 @@
+##########################################################################################################
+#Filter genes according to variability (coefficient of variability)
+##########################################################################################################
+
+#Extract matrix of coding and non-coding genes within input count matrix.
 SeperateCodingandNonCoding <- function(inputMatrix,lncRNAOnly=T){
   library(dplyr)
   source('load_GTF.R')
@@ -10,9 +15,12 @@ SeperateCodingandNonCoding <- function(inputMatrix,lncRNAOnly=T){
     return(list(coding=inputMatrix[codingIDs,],noncoding=inputMatrix[!codingIDs,]))
   }
 }
+
+#CV of each gene across samples
 CalcCV <- function(inputMatrix){
   return(apply(inputMatrix,1,function(x) sd(x)/mean(x)))
 }
+#Remove genes according to CV cutoff.
 ApplyCVFilter <- function(inputMatrix,percentile){
   cv <- CalcCV(inputMatrix)
   return(inputMatrix[rownames(inputMatrix)[cv > quantile(cv,percentile)],])
@@ -81,7 +89,7 @@ FilterByCV <- function(plots=F,inputPath,outputPath,percentile){
     DfTranscriptCoding$density <- get_density(DfTranscriptCoding$median,DfTranscriptCoding$cv)
     DfTranscriptNonCoding$density <- get_density(DfTranscriptNonCoding$median,DfTranscriptNonCoding$cv)
     
-    
+    #FIG 3.1.0.1
     p1 <- ggplot(DfGeneCoding) + aes(x=median,y = cv,colour=density) + geom_point(size=0.5) + 
       labs(x='Median Corrected Abundance',y='CV') + ggtitle('Coding Genes Microglia - \n Median Corrected Abundance vs CV') + 
       theme_bw() + ylim(c(0,max(DfGeneNonCoding$cv))) + xlim(c(0,max(DfGeneCoding$median)))

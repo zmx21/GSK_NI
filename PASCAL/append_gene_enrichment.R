@@ -13,11 +13,11 @@ AppendGeneEnrichment <- function(JoinedDfMicroglia,codingGenesInNetwork,allGenes
   numADAllGenes <- length(intersect(AD_Genes,allGenesInNetwork))
   
   #Genes Names of those which are microglia core genes
-  JoinedDfMicroglia$MicrogliaGenes <- mclapply(JoinedDfMicroglia$GeneNames,function(x) intersect(x,microgliaGenes),mc.cores = 10)
+  JoinedDfMicroglia$MicrogliaGenes <- lapply(JoinedDfMicroglia$GeneNames,function(x) intersect(x,microgliaGenes))
   #Number of genes which are microglia core genes
   JoinedDfMicroglia$MicrogliaOverlap <- sapply(JoinedDfMicroglia$MicrogliaGenes,length)
   #Genes Names of those which are AD genes
-  JoinedDfMicroglia$ADGenes <- mclapply(JoinedDfMicroglia$GeneNames,function(x) intersect(x,AD_Genes),mc.cores = 10)
+  JoinedDfMicroglia$ADGenes <- lapply(JoinedDfMicroglia$GeneNames,function(x) intersect(x,AD_Genes))
   #Number of genes which are AD  genes
   JoinedDfMicroglia$ADOverlap <- sapply(JoinedDfMicroglia$ADGenes,length)
   

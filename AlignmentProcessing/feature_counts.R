@@ -4,6 +4,7 @@
 library(Rsubread)
 ImportSTARCounts <- function(path){
   allDir <- dir(path)
+  #All ouput samples
   runDir <- allDir[union(grep('SRR',allDir),grep('GSM',allDir))]
   #Get paths for all samples
   allPaths <- sapply(runDir,function(x) (paste0(path,'/',x,'/Aligned.out.sam')))
@@ -24,11 +25,12 @@ ImportSTARCounts <- function(path){
   exonLevelCounts <- Rsubread::featureCounts(files=allPaths,isPairedEnd = T,annot.ext=GTFPath,isGTFAnnotationFile=TRUE,
                                              GTF.featureType = 'exon',GTF.attrType = 'exon_id',useMetaFeatures=F,nthreads = 10,
                                              allowMultiOverlap=T,fraction = F)
-  
+  #Name count matrix
   colnames(geneLevelCounts$counts) <- runDir; colnames(geneLevelCounts$stat) <- c('stat_type',runDir); geneLevelCounts$targets <- runDir
   colnames(exonLevelCounts$counts) <- runDir; colnames(exonLevelCounts$stat) <- c('stat_type',runDir); exonLevelCounts$targets <- runDir
   colnames(transcriptLevelCounts$counts) <- runDir; colnames(transcriptLevelCounts$stat) <- c('stat_type',runDir); transcriptLevelCounts$targets <- runDir
   
+  #Save count matrix
   save(transcriptLevelCounts,file='/local/data/public/zmx21/zmx21_private/GSK/Count_Data/STARCounts_TranscriptLevel_Microglia.rda')
   save(geneLevelCounts,file='/local/data/public/zmx21/zmx21_private/GSK/Count_Data/STARCounts_GeneLevel_Microglia.rda')
   save(exonLevelCounts,file='/local/data/public/zmx21/zmx21_private/GSK/Count_Data/STARCounts_ExonLevel_Microglia.rda')

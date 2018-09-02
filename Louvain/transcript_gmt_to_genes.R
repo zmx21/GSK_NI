@@ -1,4 +1,6 @@
+#Convert modules with transcripts into genes. Remove duplicated genes. 
 WriteGeneGmt <- function(GmtPath,outFile){
+  #Generate transcript to gene mapping
   library(qusage)
   library(dplyr)
   source('../BatchCorrection_and_QC/load_GTF.R')
@@ -6,8 +8,10 @@ WriteGeneGmt <- function(GmtPath,outFile){
   geneGtfTableFull <- geneGtfTableFull %>% dplyr::filter(feature=='transcript')
   transcriptIdToGene <- hashmap::hashmap(keys = geneGtfTableFull$transcript_id,values = geneGtfTableFull$gene_id)
   
+  #Read modules
   Gmt <- qusage::read.gmt(GmtPath)
   
+  #Convert all transcripts to genes
   GmtAsGene <- vector(mode= 'list',length = length(Gmt))
   transcriptToGeneRatio <- rep(NA,length(Gmt))
   for(i in 1:length(Gmt)){
@@ -22,7 +26,7 @@ WriteGeneGmt <- function(GmtPath,outFile){
   ratioDf <- data.frame(Level=levels,transcriptToGeneRatio=transcriptToGeneRatio,stringsAsFactors = F)
   # p <- ggplot(ratioDf, aes(x=as.factor(Level), y=transcriptToGeneRatio)) + 
   #   geom_boxplot()
-  
+  #Write gmt file with the converted genes.
   for(i in 1:length(GmtAsGene)){
     currentName <- names(GmtAsGene)[i]
     currentGenes <- GmtAsGene[[i]]
@@ -32,48 +36,18 @@ WriteGeneGmt <- function(GmtPath,outFile){
     write(currentString,file=outFile,append = T)
   }
 }
-# GmtPath <- '/local/data/public/zmx21/zmx21_private/GSK/Louvain_results/AllMicrogliaTranscripts/AllMicrogliaTranscripts.gmt'
-# outFile <- file('/local/data/public/zmx21/zmx21_private/GSK/Louvain_results/AllMicrogliaTranscripts/AllMicrogliaTranscriptsAsGenes.gmt','w')
-# WriteGeneGmt(GmtPath,outFile)
+GmtPath <- '/local/data/public/zmx21/zmx21_private/GSK/Louvain_results/AllMicrogliaTranscripts/AllMicrogliaTranscripts.gmt'
+outFile <- file('/local/data/public/zmx21/zmx21_private/GSK/Louvain_results/AllMicrogliaTranscripts/AllMicrogliaTranscriptsAsGenes.gmt','w')
+WriteGeneGmt(GmtPath,outFile)
 
-# GmtPath <- '/local/data/public/zmx21/zmx21_private/GSK/Louvain_results/Pearson_Cor0p2/AllPearsonTranscripts/all_transcripts.gmt'
-# outFile <- file('/local/data/public/zmx21/zmx21_private/GSK/Louvain_results/Pearson_Cor0p2/AllTranscriptsMicroglia_Pearson_cor0p2_abs.gmt','w')
-# WriteGeneGmt(GmtPath,outFile)
-# 
-# GmtPath <- '/local/data/public/zmx21/zmx21_private/GSK/Louvain_results/Pearson_Cor0p2/CodingPearsonTranscripts/coding_transcripts.gmt'
-# outFile <- file('/local/data/public/zmx21/zmx21_private/GSK/Louvain_results/Pearson_Cor0p2/CodingTranscriptsMicroglia_Pearson_cor0p2_abs.gmt','w')
-# WriteGeneGmt(GmtPath,outFile)
+GmtPath <- '/local/data/public/zmx21/zmx21_private/GSK/Louvain_results/Pearson_Cor0p2/AllPearsonTranscripts/all_transcripts.gmt'
+outFile <- file('/local/data/public/zmx21/zmx21_private/GSK/Louvain_results/Pearson_Cor0p2/AllTranscriptsMicroglia_Pearson_cor0p2_abs.gmt','w')
+WriteGeneGmt(GmtPath,outFile)
+
+GmtPath <- '/local/data/public/zmx21/zmx21_private/GSK/Louvain_results/Pearson_Cor0p2/CodingPearsonTranscripts/coding_transcripts.gmt'
+outFile <- file('/local/data/public/zmx21/zmx21_private/GSK/Louvain_results/Pearson_Cor0p2/CodingTranscriptsMicroglia_Pearson_cor0p2_abs.gmt','w')
+WriteGeneGmt(GmtPath,outFile)
 
 GmtPath <- '/local/data/public/zmx21/zmx21_private/GSK/WGCNA_clusters/Transcript_Level/CodingWGCNAUnsigned_Soft4_Size3_DeepSplit2.gmt'
 outFile <- file('/local/data/public/zmx21/zmx21_private/GSK/WGCNA_clusters/Transcript_Level/Transcript_As_Genes/CodingWGCNAUnsigned_Soft4_Size3_DeepSplit2.gmt','w')
 WriteGeneGmt(GmtPath,outFile)
-
-
-
-#Same gene vs different gene transcripts. 
-# geneGtfTableFullIncluded <- geneGtfTableFull %>% dplyr::filter(transcript_id %in% unique(unlist(codingMicrogliaTranscriptGmt)))
-# load('../../Count_Data/CV_Filtered/MicrogliaTranscriptCVFiltered.rda')
-# transcriptCountMatrix <- MicrogliaTranscriptCVFiltered$coding
-# allGenes <- unique(geneGtfTableFullIncluded$gene_id)
-# allGenesSamples <- sample(allGenes,size = 1000)
-# 
-# withinGroupCorr <- c()
-# numTranscript <- 0
-# for(i in 1:length(allGenesSamples)){
-#   currentTranscripts <- dplyr::filter(geneGtfTableFullIncluded,gene_id==allGenesSamples[i]) %>% select(transcript_id) %>% t() %>% as.vector()
-#   if(length(currentTranscripts)<2){
-#     next
-#   }
-#   pairWiseCorr <- cor(t(transcriptCountMatrix[currentTranscripts,]))
-#   withinGroupCorr <- c(withinGroupCorr,as.vector(pairWiseCorr[upper.tri(pairWiseCorr,diag = F)]))
-#   numTranscript <- numTranscript + length(currentTranscripts)
-# }
-# 
-# randomMatrix <- transcriptCountMatrix[sample(rownames(transcriptCountMatrix),size=numTranscript),]
-# interGroupCorrMat <- cor(t(randomMatrix))
-# interGroupcorr <- as.vector(interGroupCorrMat[upper.tri(interGroupCorrMat,diag = F)])
-# 
-# 
-# plot(density(abs(sample(interGroupcorr,size=length(withinGroupCorr)))),col='red',main='Same Gene Transcripts VS Random Transcripts',xlab='abs(cor)')
-# lines(density(abs(withinGroupCorr)),col='blue')
-# legend(x='topright',col=c('red','blue'),legend = c('Random','Same Gene'),lty=c(1,1))

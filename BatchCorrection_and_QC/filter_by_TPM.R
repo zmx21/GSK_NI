@@ -143,36 +143,3 @@ FilterByTPM <- function(plots=T,inputPath,outputPath,percentile){
   save(list = ls(environment()),file=paste0('../../CodeImages/TPMFiltering_',as.character(percentile),'.RData'))
 }
 FilterByTPM(plots = F,inputPath = '../../Count_Data/Read_Filtered/',outputPath = '../../Count_Data/TPM_Filtered/',percentile=0.75)
-
-
-
-
-
-
-
-
-
-
-
-
-
-# #Helper functino to extract biotype. 
-# FilterCountMatrix <- function(countMatrixInput,meanAbundances,cv,cvCutOffAbsolute,meanCutOffAbsolute,mappingTable=NULL){
-#   #Filter for genes according to cutoff
-#   belowMeanCutOff <- which(meanAbundances <= meanCutOffAbsolute)
-#   belowCVCutoff <- which(cv <= cvCutOffAbsolute | is.nan(cv))
-#   rowsToFilter <- union(belowMeanCutOff,belowCVCutoff)
-#   
-#   filteredCountMatrix <- countMatrixInput[setdiff(1:nrow(countMatrixInput),rowsToFilter),]
-#   
-#   #Decide whether to return categorial counts.
-#   if(is.null(mappingTable)){
-#     return(list(countMatrix = filteredCountMatrix,numFiltered = length(rowsToFilter)))
-#   }else{
-#     type <- ifelse(grepl('ENST',rownames(countMatrixInput)[1]),'transcript_id','gene_id')
-#     allFilteredNames <- data.frame(ids = rownames(filteredCountMatrix),stringsAsFactors = F)
-#     colnames(allFilteredNames) <- type
-#     categoricalCounts <- as.data.frame(dplyr::left_join(allFilteredNames,mappingTable,by=c(type,type)))
-#     return(list(countMatrix = filteredCountMatrix,numFiltered = length(rowsToFilter),categoricalCounts = categoricalCounts))
-#   }
-# }

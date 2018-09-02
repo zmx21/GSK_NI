@@ -11,7 +11,7 @@ FilterByTPM(plots = T,inputPath = '../../Count_Data/Read_Filtered/',
 #Batch correct individual dataset, and global dataset correction
 RunBatchForAllData(plots = F)
 #Save pairwise TPM comparison plots
-# SavePairwiseTPMPlots()
+SavePairwiseTPMPlots()
 #Keep genes which CV above median, according to distribution of coding and non-coding.
 FilterByCV(plots=T,list('../../Count_Data/Batch_Corrected/','../../Count_Data/TPM_Filtered/'),
            outputPath = '../../Count_Data/CV_Filtered/',0.5)

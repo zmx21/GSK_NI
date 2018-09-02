@@ -1,4 +1,4 @@
-load('../../Count_Data/Batch_Corrected/SalmonTPM_Combat_ExpCorrected')
+load('../../Count_Data/Batch_Corrected/SalmonTPM_Combat_ExpCorrected.rda')
 #load('../../Count_Data/SalmonTPM_Gene_Merged_GeneFilt.rda')
 load('../../Count_Data/geneGtfTableFull.rda')
 proteinCodingGenes <- geneGtfTableFull %>% dplyr::filter(gene_biotype=='protein_coding') %>% dplyr::select(gene_id) %>% t() %>% as.vector()
@@ -8,8 +8,8 @@ proteinCodingBatchCorrected <- batchCorrected[rownames(batchCorrected)%in%protei
 cvBatchCorrected <- apply(proteinCodingBatchCorrected,1,function(x) sd(x)/mean(x))
 #hist(cvBatchCorrected,breaks=50,main='Batch Corrected TPM - CV Distribution',xlab='CV')
 
-batchCorrectedLowCV <- proteinCodingBatchCorrected[cvBatchCorrected < quantile(cvBatchCorrected,0.25),]
-batchCorrectedHighCV <- proteinCodingBatchCorrected[cvBatchCorrected > quantile(cvBatchCorrected,0.75),]
+batchCorrectedLowCV <- proteinCodingBatchCorrected[cvBatchCorrected < quantile(cvBatchCorrected,0.1),]
+batchCorrectedHighCV <- proteinCodingBatchCorrected[cvBatchCorrected > quantile(cvBatchCorrected,0.9),]
 
 batchCorrectedLowCVGenes <- data.frame(gene_id=rownames(batchCorrectedLowCV),stringsAsFactors = F) %>% 
   left_join(dplyr::select(geneGtfTableFull,gene_id,gene_name)) %>%
@@ -41,8 +41,8 @@ write.xlsx(list(batchCorrectedHighCVGO$GO_Molecular_Function_2017,batchCorrected
 
 
 
-batchCorrectedLowCVPanther <- read.table(file='/local/data/public/zmx21/zmx21_private/GSK/CV_GOAnno/lowCVPanther.txt',sep='\t',header=F)
-batchCorrectedHighCVPanther <- read.table(file='/local/data/public/zmx21/zmx21_private/GSK/CV_GOAnno/highCVPanther.txt',sep='\t',header=F)
+batchCorrectedLowCVPanther <- read.table(file='../../CV_GOAnno/lowCVPanther.txt',sep='\t',header=F)
+batchCorrectedHighCVPanther <- read.table(file='../../CV_GOAnno/highCVPanther.txt',sep='\t',header=F)
 PantherDf <- data.frame(CV=rep(c('LowCV','HighCV'),each=nrow(batchCorrectedHighCVPanther)),
                         GOAnnotation=c(batchCorrectedLowCVPanther$V2,batchCorrectedHighCVPanther$V2),
                         Fraction=c(as.numeric(gsub('%','',batchCorrectedLowCVPanther$V5)),as.numeric(gsub('%','',batchCorrectedHighCVPanther$V5))))

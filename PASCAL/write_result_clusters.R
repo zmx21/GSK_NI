@@ -1,3 +1,4 @@
+#Write files of module genes, with input dataframe of significant modules
 WriteResultClusters <- function(sigClusters,name){
   outpath <- paste0('../../results/',name)
   system(paste0('mkdir -p ',outpath))

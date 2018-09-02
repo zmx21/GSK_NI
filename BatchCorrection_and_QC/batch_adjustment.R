@@ -1,6 +1,11 @@
-#Batch correction, 
-#input should be count matrix, expType specifies whether batch correction should be performed on 
-#expType of Gosselin. Full specifies whether batch correction should be performed on dataset alone. 
+##########################################################################################################
+#Functions for batch correction, for within study and inter study biases.
+##########################################################################################################
+
+#Subfunction to run batch correction
+#input should be count matrix
+#expType specifies whether batch correction should be performed on expType of Gosselin. 
+#Full specifies whether batch correction should be performed on dataset alone. 
 #output is Combat and PC corrected count matrix
 RunCombat <- function(Gene_Matrix,Transcript_Matrix = NULL,Samples,expType = F,full=F){
   library(dplyr)
@@ -16,15 +21,14 @@ RunCombat <- function(Gene_Matrix,Transcript_Matrix = NULL,Samples,expType = F,f
   }
   
   #Load batch Information of each sample, Galatro et al
-  runTable_Galatro <- rbind(read.table(file = '/local/data/public/zmx21/zmx21_private/GSK/Galatro/SraRunTable.txt',header = T,sep = '\t',stringsAsFactors = F),
-                            read.table(file = '/local/data/public/zmx21/zmx21_private/GSK/Galatro_Brain/SraRunTable.txt',header = T,sep = '\t',stringsAsFactors = F))
+  runTable_Galatro <- rbind(read.table(file = '../../Galatro/SraRunTable.txt',header = T,sep = '\t',stringsAsFactors = F))
   #No batches in Olah
   OlahBatches <- data.frame(Sample_Name = colnames(Gene_Matrix)[sapply(colnames(Gene_Matrix),function(x) grepl('H5KN',x))])
   OlahBatches$batch <- rep('Olah',nrow(OlahBatches))
   
   
   #Load batch Information of each sample, Galatro et al
-  runTable_Gosselin <- read.table(file = '/local/data/public/zmx21/zmx21_private/GSK/Gosselin/SraRunTable_Parsed.txt',header = T,sep = '\t')
+  runTable_Gosselin <- read.table(file = '../../Gosselin/SraRunTable_Parsed.txt',header = T,sep = '\t')
   runTable_Gosselin <- dplyr::mutate(runTable_Gosselin,expType = ifelse(grepl('ExVivo',Library_Name),'ExVivo','InVitro'))
   
   #Choose which samples to include, based on provided Samples character vector.
@@ -37,13 +41,13 @@ RunCombat <- function(Gene_Matrix,Transcript_Matrix = NULL,Samples,expType = F,f
   if(!full){
     GalatroBatches <- dplyr::filter(runTable_Galatro,Sample_Name%in%colnames(Gene_Matrix)) %>%
       dplyr::select(AvgSpotLen,Sample_Name,age,gender) %>%
-      dplyr::mutate(batch=ifelse(AvgSpotLen==202 | AvgSpotLen==199,'GalatroIllumina','GalatroTakara')) %>%
+      dplyr::mutate(batch=ifelse(AvgSpotLen==202 | AvgSpotLen==199,'Illumina\nLibrary','Takara\nLibrary')) %>%
       dplyr::distinct(Sample_Name,.keep_all=T) %>% dplyr::select(Sample_Name,batch)
     #Based on whether expType should be considered as a batch, merge different data frames. 
     if(!expType){
       GosselinBatches <- dplyr::filter(runTable_Gosselin,Sample_Name%in%colnames(Gene_Matrix)) %>%
         dplyr::select(AvgSpotLen,Sample_Name,gender,Instrument) %>%
-        dplyr::mutate(batch=ifelse(Instrument=='Illumina HiSeq 4000','GosselinIllumina','GosselinNextSeq')) %>%
+        dplyr::mutate(batch=ifelse(Instrument=='Illumina HiSeq 4000','Illumina\nInstrument','NextSeq\nInstrument')) %>%
         dplyr::distinct(Sample_Name,.keep_all=T) %>% dplyr::select(Sample_Name,batch)
     }else{
       GosselinBatches <- dplyr::filter(runTable_Gosselin,Sample_Name%in%colnames(Gene_Matrix)) %>%
@@ -104,6 +108,7 @@ RunBatchCorrection <- function(GeneMatrix,TranscriptMatrix,Sample,expType=F,full
   GeneMatrix <- GeneMatrix[apply(GeneMatrix,1,function(x) !all(x==0)),]
   TranscriptMatrix <- TranscriptMatrix[apply(TranscriptMatrix,1,function(x) !all(x==0)),]
   
+  #Run batch correciton, get pre and post correction PCA 
   MatrixCorrected <- RunCombat(GeneMatrix,TranscriptMatrix,Samples = Sample,expType = expType,full= full)
   PCA_PostCorrection_Gene <- CalcPCA(MatrixCorrected$SalmonTPM_Gene_Combat_Merged)
   PCA_PostCorrection_Gene$Df$batch <- MatrixCorrected$Batches$batch
@@ -117,23 +122,46 @@ RunBatchCorrection <- function(GeneMatrix,TranscriptMatrix,Sample,expType=F,full
   PCA_PreCorrection_Transcript <- CalcPCA(TranscriptMatrix)
   PCA_PreCorrection_Transcript$Df$batch <- MatrixCorrected$Batches$batch
   
-  
+  #PCA Plots
   if(plots){
-    PCA_PostCorrectionPlot <- list(autoplot(PCA_PostCorrection_Gene$PCA,data=PCA_PostCorrection_Gene$Df,colour='batch',size=4,shape=F) + ggtitle('Post Batch Correction - Gene'),
-                                   autoplot(PCA_PostCorrection_Transcript$PCA,data=PCA_PostCorrection_Transcript$Df,colour='batch',size=4,shape=F) + ggtitle('Post Batch Correction - Transcript'))
+    library(ggfortify)
+    PCA_PostCorrection_Gene_Sum <- summary(PCA_PostCorrection_Gene$PCA)$importance[2,1:2]
+    PCA_PostCorrection_Transcript_Sum <- summary(PCA_PostCorrection_Transcript$PCA)$importance[2,1:2]
     
-    PCA_PreCorrectionPlot <- list(autoplot(PCA_PreCorrection_Gene$PCA,data=PCA_PreCorrection_Gene$Df,colour='batch',size=4,shape=F) + ggtitle('Pre Batch Correction - Gene'),
-                                  autoplot(PCA_PreCorrection_Transcript$PCA,data=PCA_PreCorrection_Transcript$Df,colour='batch',size=4,shape=F) + ggtitle('Pre Batch Correction - Transcript'))
+    PCA_PostCorrectionPlot <- list(ggplot2::autoplot(PCA_PostCorrection_Gene$PCA,data=PCA_PostCorrection_Gene$Df,colour='batch',size=4,shape=F) + ggtitle('Post Batch Correction - Gene') +
+                                     xlab(paste0('PC1 (',round(PCA_PostCorrection_Gene_Sum[1]*100,1),'%)')) + labs(color='Batch')+theme(legend.spacing.y = unit(2,'cm')) +
+                                            ylab(paste0('PC2 (',round(PCA_PostCorrection_Gene_Sum[2]*100,1),'%)')),
+                                   ggplot2::autoplot(PCA_PostCorrection_Transcript$PCA,data=PCA_PostCorrection_Transcript$Df,colour='batch',size=4,shape=F) + ggtitle('Post Batch Correction - Transcript')+
+                                     xlab(paste0('PC1 (',round(PCA_PostCorrection_Transcript_Sum[1]*100,1),'%)')) + labs(color='Batch')+theme(legend.spacing.y = unit(2,'cm')) +
+                                     ylab(paste0('PC2 (',round(PCA_PostCorrection_Transcript_Sum[2]*100,1),'%)')))
+    PCA_PreCorrection_Gene_Sum <- summary(PCA_PreCorrection_Gene$PCA)$importance[2,1:2]
+    PCA_PreCorrection_Transcript_Sum <- summary(PCA_PreCorrection_Transcript$PCA)$importance[2,1:2]
+    
+    PCA_PreCorrectionPlot <- list(ggplot2::autoplot(PCA_PreCorrection_Gene$PCA,data=PCA_PreCorrection_Gene$Df,colour='batch',size=4,shape=F) + ggtitle('Pre Batch Correction - Gene')+
+                                    xlab(paste0('PC1 (',round(PCA_PreCorrection_Gene_Sum[1]*100,1),'%)')) + labs(color='Batch')+theme(legend.spacing.y = unit(2,'cm')) +
+                                    ylab(paste0('PC2 (',round(PCA_PreCorrection_Gene_Sum[2]*100,1),'%)')),
+                                  ggplot2::autoplot(PCA_PreCorrection_Transcript$PCA,data=PCA_PreCorrection_Transcript$Df,colour='batch',size=4,shape=F) + ggtitle('Pre Batch Correction - Transcript')+
+                                    xlab(paste0('PC1 (',round(PCA_PreCorrection_Transcript_Sum[1]*100,1),'%)')) + labs(color='Batch')+ theme(legend.spacing.y = unit(2,'cm')) +
+                                    ylab(paste0('PC2 (',round(PCA_PreCorrection_Transcript_Sum[2]*100,1),'%)')))
     library(egg)
     tiff(file=paste0('../../Figures/Batch_Correction/',figName,'.tiff'),width=800,height=500)
-    ggarrange(plots = c(PCA_PreCorrectionPlot,PCA_PostCorrectionPlot),ncol=2)
+    egg::ggarrange(plots = c(PCA_PreCorrectionPlot,PCA_PostCorrectionPlot),ncol=2)
     dev.off()
+    
+    
+    library(ggpubr)
+    ggpubr::ggexport(ggpubr::ggarrange(plotlist = list(PCA_PreCorrectionPlot[[1]] + ggtitle('A)'),
+                                            PCA_PostCorrectionPlot[[1]] + ggtitle('B)'),
+                                            PCA_PreCorrectionPlot[[2]] + ggtitle('C)'),
+                                            PCA_PostCorrectionPlot[[2]] + ggtitle('D)'))),
+                     filename = paste0('../../FinalFigures/BatchCorrection/',figName,'.pdf'),height = 6,width = 10)
     return(list(PCA_Plots = list(PCA_PreCorrectionPlot,PCA_PostCorrectionPlot),MatrixCorrected=MatrixCorrected))
   }
   
   return(list(MatrixCorrected=MatrixCorrected))
 }
 
+#Main function, to run batch correction for within and between study.  
 RunBatchForAllData <- function(plots=F){
   source('pca_analysis.R')
   load('../../Count_Data/TPM_Filtered/TPM_Microglia_Gene_Merged.rda')
@@ -171,58 +199,84 @@ RunBatchForAllData <- function(plots=F){
   MergedIndivCorrected$Transcript <- MergedIndivCorrected$Transcript[apply(MergedIndivCorrected$Transcript,1,function(x) !all(x==0)),]
   
   #Global batch correction.
-  MergedFinalBatchCorrected <- RunBatchCorrection(MergedIndivCorrected$Gene,MergedIndivCorrected$Transcript,c('Galatro','Gosselin','Olah'),expType = F,full = T,plots = T,figName = 'GlobalCorrection')
+  MergedFinalBatchCorrected <- RunBatchCorrection(MergedIndivCorrected$Gene,MergedIndivCorrected$Transcript,c('Galatro','Gosselin','Olah'),expType = F,full = T,plots = plots,figName = 'GlobalCorrection')
   SalmonTPM_Combat_ExpCorrected <- MergedFinalBatchCorrected$MatrixCorrected
-  save(SalmonTPM_Combat_ExpCorrected,file='../../Count_Data/Batch_Corrected/SalmonTPM_Combat_ExpCorrected.rda')
-  save(list = ls(environment()),file='../../CodeImages/BatchCorrection.RData')
+  
+  GalatroBatches <- GalatroCorrected$MatrixCorrected$Batches
+  GosselinBatches <- dplyr::left_join(Gosselin_ExpType_Corrected$MatrixCorrected$Batches,
+                                      Gosselin_Instrument_Corrected$MatrixCorrected$Batches,by=c('Sample_Name'='Sample_Name'))
+  GosselinBatches$DetailedBatch <- sapply(1:nrow(GosselinBatches),function(i) paste(GosselinBatches$batch.x[i],GosselinBatches$batch.y[i],sep = '\n'))
+  GosselinBatches$DetailedBatch <- sapply(GosselinBatches$DetailedBatch,function(x) gsub(x=x,pattern = "\nInstrument",replacement = ""))
+  GosselinBatches <- GosselinBatches %>% dplyr::select(Sample_Name,batch=DetailedBatch)
+  
+  #Same batch in Olah dataset
+  OlahBatches <- data.frame(Sample_Name=colnames(OlahSamples_Genes),batch=rep('Olah',ncol(OlahSamples_Genes)))
+  
+  #Use short form sample names. 
+  colnames(TPM_Microglia_Gene_Merged) <-  sapply(colnames(TPM_Microglia_Gene_Merged),function(x) ifelse(grepl(x=x,pattern = 'H5'),paste0('OLA_',substr(x,11,12),'_',
+                                                                                                                                      substr(x,20,22)),
+                                                                                                                 ifelse(grepl(x=x,pattern = 'GSM'),
+                                                                                                                        paste0('GAL',substr(x,9,10)),
+                                                                                                                        paste0('GOS',substr(x,9,10)))))
+  allDetailedBatches <- rbind(GalatroBatches,GosselinBatches,OlahBatches)
+  allDetailedBatches$Sample_Name <- sapply(allDetailedBatches$Sample_Name,function(x) ifelse(grepl(x=x,pattern = 'H5'),paste0('OLA_',substr(x,11,12),'_',
+                                                                                                                       substr(x,20,22)),
+                                                                                                  ifelse(grepl(x=x,pattern = 'GSM'),
+                                                                                                         paste0('GAL',substr(x,9,10)),
+                                                                                                         paste0('GOS',substr(x,9,10)))))
+  
+  studyNameBatch <- SalmonTPM_Combat_ExpCorrected$Batches
+  studyNameBatch$Sample_Name <- sapply(studyNameBatch$Sample_Name,function(x) ifelse(grepl(x=x,pattern = 'H5'),paste0('OLA_',substr(x,11,12),'_',
+                                                                                                                          substr(x,20,22)),
+                                                                                         ifelse(grepl(x=x,pattern = 'GSM'),
+                                                                                                paste0('GAL',substr(x,9,10)),
+                                                                                                paste0('GOS',substr(x,9,10)))))
+  pre_batch <- stack(as.data.frame(TPM_Microglia_Gene_Merged)) %>% dplyr::left_join(allDetailedBatches,by=c('ind'='Sample_Name')) %>%
+    dplyr::left_join(studyNameBatch %>% dplyr::select(Sample_Name,StudyName=batch),by=c('ind'='Sample_Name')) 
+  pre_batch <- pre_batch %>% dplyr::arrange(batch)
+  
+  #TPM plots at batch correction steps
+  library(forcats)
+  p1 <- ggplot(pre_batch) +
+    geom_boxplot(aes(x = fct_inorder(ind), y = values,fill=batch),outlier.shape = NA) +
+    scale_x_discrete(name = "Sample",labels = wrap_format(5)) +
+    scale_y_continuous(name = "TPM",limits = quantile(pre_batch$values, c(0.1, 0.9))) +
+    theme(axis.text.x = element_text(angle = 90, hjust = 1,vjust = 0.6,size =8)) +
+    labs(fill='Batch') + facet_grid(.~StudyName,scales = "free", space = "free") + ggtitle('A)')
+  colnames(MergedIndivCorrected$Gene) <- sapply(colnames(MergedIndivCorrected$Gene),function(x) ifelse(grepl(x=x,pattern = 'H5'),paste0('OLA_',substr(x,11,12),'_',
+                                                                                                                                        substr(x,20,22)),
+                                                                                                       ifelse(grepl(x=x,pattern = 'GSM'),
+                                                                                                              paste0('GAL',substr(x,9,10)),
+                                                                                                              paste0('GOS',substr(x,9,10)))))
+  post_indiv_batch <- stack(as.data.frame(MergedIndivCorrected$Gene)) %>% dplyr::left_join(allDetailedBatches,by=c('ind'='Sample_Name')) %>%
+    dplyr::left_join(studyNameBatch %>% dplyr::select(Sample_Name,StudyName=batch),by=c('ind'='Sample_Name')) 
+  post_indiv_batch <- post_indiv_batch %>% dplyr::arrange(batch)
+  
+  p2 <- ggplot(post_indiv_batch) +
+    geom_boxplot(aes(x = fct_inorder(ind), y = values,fill=batch),outlier.shape = NA) +
+    scale_x_discrete(name = "Sample",labels = wrap_format(5)) +
+    scale_y_continuous(name = "Corrected Abundance",limits = quantile(post_indiv_batch$values, c(0.1, 0.9))) +
+    theme(axis.text.x = element_text(angle = 90, hjust = 1,vjust = 0.6,size =8)) +
+    labs(fill='Batch') + facet_grid(.~StudyName,scales = "free", space = "free") + ggtitle('B)')
+  
+  
+  colnames(SalmonTPM_Combat_ExpCorrected$SalmonTPM_Gene_Combat_Merged) <- sapply(colnames(SalmonTPM_Combat_ExpCorrected$SalmonTPM_Gene_Combat_Merged),function(x) ifelse(grepl(x=x,pattern = 'H5'),paste0('OLA_',substr(x,11,12),'_',
+                                                                                                                                            substr(x,20,22)),
+                                                                                                           ifelse(grepl(x=x,pattern = 'GSM'),
+                                                                                                                  paste0('GAL',substr(x,9,10)),
+                                                                                                                  paste0('GOS',substr(x,9,10)))))
+  post_batch <- stack(as.data.frame(SalmonTPM_Combat_ExpCorrected$SalmonTPM_Gene_Combat_Merged)) %>% dplyr::left_join(allDetailedBatches,by=c('ind'='Sample_Name')) %>%
+    dplyr::left_join(studyNameBatch %>% dplyr::select(Sample_Name,StudyName=batch),by=c('ind'='Sample_Name')) 
+  post_batch <- post_batch %>% dplyr::arrange(batch)
+  p3 <- ggplot(post_batch) +
+    geom_boxplot(aes(x = fct_inorder(ind), y = values,fill=batch),outlier.shape = NA) +
+    scale_x_discrete(name = "Sample",labels = wrap_format(5)) +
+    scale_y_continuous(name = "Corrected Abundance",limits = quantile(post_batch$values, c(0.1, 0.9))) +
+    theme(axis.text.x = element_text(angle = 90, hjust = 1,vjust = 0.6,size =8)) +
+    labs(fill='Batch') + facet_grid(.~StudyName,scales = "free", space = "free") + ggtitle('C)')
+  
+  ggpubr::ggexport(ggpubr::ggarrange(p1),filename = '../../FinalFigures/Supplementary/TPM_PreBatch.pdf',width = 12,height = 5)
+  ggpubr::ggexport(ggpubr::ggarrange(p2),filename = '../../FinalFigures/Supplementary/TPM_Batch.pdf',width = 12,height = 5)
+  ggpubr::ggexport(ggpubr::ggarrange(p3),filename = '../../FinalFigures/Supplementary/TPM_PostBatch.pdf',width = 12,height = 5)
   
 }
-
-
-
-
-
-########################################PC Regress out##########################################
-# PC_Correction <- function(countMatrix,metadata){
-#   PC_Estimate = function(countMatrix,metadata){
-#     # determine number of principal components to adjust for
-#     mod <- model.matrix(~1,data=metadata)
-#     n.pc <- sva::num.sv(countMatrix, mod,method='be')
-#     return(n.pc)
-#   }
-#   ComputePCLoadings <- function(countMatrix){
-#     usv <- svd(scale(t(countMatrix)))
-#     return(usv$u)
-#   }
-#   PC_Correct <- function(countMatrix, loadings, n.pc){
-#     dat <- t(countMatrix)
-#     n.pc <- c(1:n.pc) #Range of PC to consider
-#     print(paste("removing", n.pc, "PCs", nrow(dat)))
-#     # use residuals from top n.pc principal components
-#     dat.adjusted <- lm(dat ~ loadings[,n.pc])$residuals
-#     return(t(dat.adjusted))
-#   }
-#   n.pc <- PC_Estimate(countMatrix,metadata) #Estimate # of PC to regress out
-#   loadings <- ComputePCLoadings(countMatrix) #Compute loadings of each PC
-#   #Retur result of batch correct PC, based on 1stPC and 1st + 2nd PC
-#   return(list(OnePC=PC_Correct(countMatrix,loadings,1),TwoPC=PC_Correct(countMatrix,loadings,2)))
-# }
-# SalmonTPM_Gene_PCAdj <- PC_Correction(log(SalmonTPM_Gene_Filt+1),runTable)
-# SalmonTPM_Transcript_PCAdj <- PC_Correction(log(SalmonTPM_Transcript_Filt+1),runTable)
-# 
-# #Compare PCA of methods, after batch correction. 
-# 
-# source('pca_analysis.R')
-# No_Adj <- CalcPCA(log(SalmonTPM_Gene_Filt+1),tables)
-# Gene_Combat <- CalcPCA(SalmonTPM_Gene_Combat,tables)
-# Gene_PCAdj_One <- CalcPCA(SalmonTPM_Gene_PCAdj$OnePC,tables)
-# Gene_PCAdj_Two <- CalcPCA(SalmonTPM_Gene_PCAdj$TwoPC,tables)
-# 
-# library(ggplot2)
-# library(egg)
-# p1 = autoplot(No_Adj$PCA, data = No_Adj$Df, colour = 'readLength',size=4,shape=F) + ggtitle('PCA - No Batch Correction')
-# p2 = autoplot(Gene_Combat$PCA, data = Gene_Combat$Df, colour = 'readLength',size=4,shape=F) + ggtitle('PCA - Combat')
-# p3 = autoplot(Gene_PCAdj_One$PCA, data = Gene_PCAdj_One$Df, colour = 'readLength',size=4,shape=F) + ggtitle('PCA - 1st PCA Regression')
-# p4 = autoplot(Gene_PCAdj_Two$PCA, data = Gene_PCAdj_Two$Df, colour = 'readLength',size=4,shape=F) + ggtitle('PCA - 1st and 2nd PCA Regression')
-# ggarrange(p1,p2,p3,p4,ncol=2,nrow=2)
-

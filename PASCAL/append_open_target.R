@@ -22,7 +22,7 @@ AppendOpenTarget <- function(JoinedDfMicroglia,csvPath,codingGenesInNetwork,allG
     curAssociationOverlap <- sapply(curAssociationGenes,length)
     curTargetOverlap <- sapply(curTargetGenes,length)
     
-    
+    #Calculate Open Target P-values. Use different base set for coding +/- non-coding genes
     Association_P <- rep(NA,nrow(JoinedDfMicroglia))
     Target_P <- rep(NA,nrow(JoinedDfMicroglia))
     for(j in 1:length(Association_P)){

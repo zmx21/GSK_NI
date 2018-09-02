@@ -243,11 +243,11 @@ RunLouvainRecursive <- function(initialEdgeListPath,outDirectory,prefix=""){
 # }
 
 
-outDirectory <- '/local/data/public/zmx21/zmx21_private/GSK/Louvain_results/CodingPearsonTranscripts/'
-initialEdgeListPath <- '/local/data/public/zmx21/zmx21_private/GSK/Louvain_Edge_List/CodingTranscriptsEdgeListMicroglia.txt'
-RunLouvainRecursive(initialEdgeListPath = initialEdgeListPath,outDirectory = outDirectory,prefix = 'coding_microglia_transcripts')
-
-outDirectory <- '/local/data/public/zmx21/zmx21_private/GSK/Louvain_results/AllPearsonTranscripts/'
-initialEdgeListPath <- '/local/data/public/zmx21/zmx21_private/GSK/Louvain_Edge_List/AllTranscriptsEdgeListMicroglia.txt'
-RunLouvainRecursive(initialEdgeListPath = initialEdgeListPath,outDirectory = outDirectory,prefix = 'all_microglia_transcripts')
+# outDirectory <- '/local/data/public/zmx21/zmx21_private/GSK/Louvain_results/CodingPearsonTranscripts/'
+# initialEdgeListPath <- '/local/data/public/zmx21/zmx21_private/GSK/Louvain_Edge_List/CodingTranscriptsEdgeListMicroglia.txt'
+# RunLouvainRecursive(initialEdgeListPath = initialEdgeListPath,outDirectory = outDirectory,prefix = 'coding_microglia_transcripts')
+# 
+# outDirectory <- '/local/data/public/zmx21/zmx21_private/GSK/Louvain_results/AllPearsonTranscripts/'
+# initialEdgeListPath <- '/local/data/public/zmx21/zmx21_private/GSK/Louvain_Edge_List/AllTranscriptsEdgeListMicroglia.txt'
+# RunLouvainRecursive(initialEdgeListPath = initialEdgeListPath,outDirectory = outDirectory,prefix = 'all_microglia_transcripts')
 

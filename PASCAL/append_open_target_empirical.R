@@ -23,8 +23,8 @@ AppendOpenTargetEmpirical <- function(JoinedDfMicroglia,permPath,csvPath,codingG
     numAllTargetGenes <- length(intersect(drugTargetGenes[[i]],allGenesInNetwork))
     
     #Find overlap of genes, and find length of overlap
-    curAssociationGenes <- mclapply(JoinedDfMicroglia$GeneNames,function(x) intersect(x,diseaseAssociatationGenes[[i]]$Genes),mc.cores = 10)
-    curTargetGenes <- mclapply(JoinedDfMicroglia$GeneNames,function(x) intersect(x,drugTargetGenes[[i]]),mc.cores = 10)
+    curAssociationGenes <- lapply(JoinedDfMicroglia$GeneNames,function(x) intersect(x,diseaseAssociatationGenes[[i]]$Genes))
+    curTargetGenes <- lapply(JoinedDfMicroglia$GeneNames,function(x) intersect(x,drugTargetGenes[[i]]))
     curAssociationOverlap <- sapply(curAssociationGenes,length)
     curTargetOverlap <- sapply(curTargetGenes,length)
     

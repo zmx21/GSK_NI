@@ -2,17 +2,42 @@
 #PCA based on gene expressions. Imports metadata, which could be visualzed as colors on PCA plot.
 ##########################################################################################################
 #Import required Data
-source('sample_mapping.R')
+##########################################################################################################
+#For Galatro et al, returns mapping between GSM, SRR and title. 
+##########################################################################################################
+GetSampleMapping <- function(){
+  #Get SRR to GSM mapping, downloaded from SRA
+  runTable <- read.table(file = '/local/data/public/zmx21/zmx21_private/GSK/Galatro/SraRunTable.txt',header = T,sep = '\t')
+  SRRToGSM <- data.frame(GSM = runTable$Sample_Name,SRR = runTable$Run)
+  
+  #Extract sample titles 
+  matrixFile <- readLines(con = "/local/data/public/zmx21/zmx21_private/GSK/Galatro/GSE99074-GPL16791_series_matrix.txt")
+  sampleTitles <- matrixFile[which(sapply(matrixFile,function(x) grepl('Sample_title',x)))]
+  sampleTitles <- unlist(strsplit(sampleTitles,'\t'))
+  sampleTitles <- sampleTitles[2:length(sampleTitles)]
+  sampleTitles <- sapply(sampleTitles,function(x) paste0(unlist(strsplit(x,""))[2:(length(unlist(strsplit(x,"")))-1)],collapse = ""))
+  
+  #Extract GSM id of each sample title, in same order
+  sampleGSM <- matrixFile[which(sapply(matrixFile,function(x) grepl('Sample_geo_accession',x)))]
+  sampleGSM <- unlist(strsplit(sampleGSM,'\t'))
+  sampleGSM <- sampleGSM[2:length(sampleGSM)]
+  sampleGSM <- sapply(sampleGSM,function(x) paste0(unlist(strsplit(x,""))[2:(length(unlist(strsplit(x,"")))-1)],collapse = ""))
+  
+  #Merge the two mappings SRR->GSM->Title
+  titleToGSM <- data.frame(title=sampleTitles,GSM = sampleGSM)
+  mapping <- merge(SRRToGSM,titleToGSM)
+  return(mapping)
+}
 
 #Collections metadata, from a count matrix (where colnames are sample names)
 #also need the tables, which is a list of tables with run info, alignment info, and read distribution info. 
 CollectMetadata <- function(inputMatrix,full=F){
   library(dplyr)
   #Get metadata (downloaded from SRA), alignment info, and read distribtuion
-  runTable_Galatro <- read.table(file = '/local/data/public/zmx21/zmx21_private/GSK/Galatro/SraRunTable.txt',header = T,sep = '\t',stringsAsFactors = F) %>% 
+  runTable_Galatro <- read.table(file = '../../Galatro/SraRunTable.txt',header = T,sep = '\t',stringsAsFactors = F) %>% 
     dplyr::select(Sample_Name,AvgSpotLen,gender,age) %>%
     {.[!duplicated(.),]}  #Each sample has two runs, so remove duplicated rows
-  runTable_Galatro_Brain <- read.table(file = '/local/data/public/zmx21/zmx21_private/GSK/Galatro_Brain//SraRunTable.txt',header = T,sep = '\t',stringsAsFactors = F) %>% 
+  runTable_Galatro_Brain <- read.table(file = '../../Galatro_Brain/SraRunTable.txt',header = T,sep = '\t',stringsAsFactors = F) %>% 
     dplyr::select(Sample_Name,AvgSpotLen,gender,age) %>%
     {.[!duplicated(.),]}  #Each sample has two runs, so remove duplicated rows
   
@@ -20,20 +45,18 @@ CollectMetadata <- function(inputMatrix,full=F){
   runTable_Galatro_Brain$BulkBrain <- rep(1,nrow(runTable_Galatro_Brain)) 
   runTable_Galatro <- rbind(runTable_Galatro,runTable_Galatro_Brain)
   
-  alignmentTable_Galatro <- rbind(read.table(file='/local/data/public/zmx21/zmx21_private/GSK/Galatro/Salmon_aligned_merged/multiqc_Salmon_merged//multiqc_general_stats.txt',header = T,stringsAsFactors = F),
-                                  read.table(file='/local/data/public/zmx21/zmx21_private/GSK/Galatro_Brain/Salmon_aligned_whole_brain/multiqc_data/multiqc_general_stats.txt',header = T,stringsAsFactors = F))
-  readDist_Galatro <- rbind(read.table(file='/local/data/public/zmx21/zmx21_private/GSK/Galatro/STAR_aligned_merged/multiqc_data/multiqc_rseqc_read_distribution.txt',header=T,stringsAsFactors = F),
-                            read.table(file='/local/data/public/zmx21/zmx21_private/GSK/Galatro_Brain/STAR_aligned_whole_brain/multiqc_data/multiqc_rseqc_read_distribution.txt',header=T,stringsAsFactors = F)) 
+  alignmentTable_Galatro <- rbind(read.table(file='../../Galatro/Salmon_aligned_merged/multiqc_Salmon_merged/multiqc_general_stats.txt',header = T,stringsAsFactors = F))
+  readDist_Galatro <- rbind(read.table(file='../../Galatro/STAR_aligned_merged/multiqc_data/multiqc_rseqc_read_distribution.txt',header=T,stringsAsFactors = F)) 
   readDist_Galatro$Sample <- sapply(readDist_Galatro$Sample,function(x) unlist(strsplit(x = x,split = '[.]'))[1])
   
-  runTable_Gosselin <- read.table(file = '/local/data/public/zmx21/zmx21_private/GSK/Gosselin/SraRunTable_Parsed.txt',header = T,sep = '\t',stringsAsFactors = F) %>% 
+  runTable_Gosselin <- read.table(file = '../../Gosselin/SraRunTable_Parsed.txt',header = T,sep = '\t',stringsAsFactors = F) %>% 
     dplyr::select(Sample_Name,AvgSpotLen,gender,age) %>% dplyr::mutate(BulkBrain = 0)
-  alignmentTable_Gosselin <- read.table(file='/local/data/public/zmx21/zmx21_private/GSK/Gosselin/salmon/multiqc_data/multiqc_general_stats.txt',header = T,stringsAsFactors = F)
-  readDist_Gosselin <- read.table(file='/local/data/public/zmx21/zmx21_private/GSK/Gosselin/QC_Reports/star_multiqc_data/multiqc_rseqc_read_distribution.txt',header=T,stringsAsFactors = F) %>%
+  alignmentTable_Gosselin <- read.table(file='../../Gosselin/multiqc_general_stats.txt',header = T,stringsAsFactors = F)
+  readDist_Gosselin <- read.table(file='../../Gosselin/multiqc_rseqc_read_distribution.txt',header=T,stringsAsFactors = F) %>%
     dplyr::mutate(other_intergenic_tag_count=0,other_intergenic_tag_pct=0)
 
-  alignmentTable_Olah <- read.table(file='/local/data/public/zmx21/zmx21_private/GSK/Olah/salmon/multiqc_data/multiqc_general_stats.txt',header = T,stringsAsFactors = F)
-  readDist_Olah <- read.table(file='/local/data/public/zmx21/zmx21_private/GSK/Olah/QC_Reports/star_multiqc_data/multiqc_rseqc_read_distribution.txt',header=T,stringsAsFactors = F) %>%
+  alignmentTable_Olah <- read.table(file='../../Olah/multiqc_general_stats.txt',header = T,stringsAsFactors = F)
+  readDist_Olah <- read.table(file='../../Olah/multiqc_rseqc_read_distribution.txt',header=T,stringsAsFactors = F) %>%
     dplyr::mutate(other_intergenic_tag_count=0,other_intergenic_tag_pct=0)
   
   
@@ -62,7 +85,7 @@ CollectMetadata <- function(inputMatrix,full=F){
                                    intronTags = introns_tag_count,totalTags = total_tags,intergenicTags=other_intergenic_tag_count),by=c('Sample_Name'='Sample_Name'))
   df <- cbind(df,dfMetadata%>% dplyr::select(-Sample_Name))
   #Add expType and instrument for Gosselin Samples
-  GosselinAddtlData <- read.table(file = '/local/data/public/zmx21/zmx21_private/GSK/Gosselin/SraRunTable_Parsed.txt',header = T,sep = '\t',stringsAsFactors = F) %>%
+  GosselinAddtlData <- read.table(file = '../../Gosselin/SraRunTable_Parsed.txt',header = T,sep = '\t',stringsAsFactors = F) %>%
     dplyr::select(Sample_Name,Instrument,Library_Name) %>% 
     dplyr::mutate(expType = ifelse(grepl('ExVivo',Library_Name),'ExVivo','InVitro')) %>% 
     dplyr::select(-Library_Name)

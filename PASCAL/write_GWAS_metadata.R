@@ -1,9 +1,11 @@
+#Generate GWAS metadata,based on PASCAL output (Genome wide significant genes)
 library(data.table)
 library(dplyr)
 # source('annotate_clusters.R')
 GetGWASMetdata <- function(sigClusters=NULL,clusterLevel=T){
   GWASMetadata <- read.csv('/local/data/public/zmx21/zmx21_private/GSK/GWAS/GWASMetadata.csv',stringsAsFactors = F)
   
+  #statistics based on modules
   if(!clusterLevel){
     #Get significant genes included in GWAS studies
     PASCAL_raw_Path <- '/local/data/public/zmx21/zmx21_private/GSK/GWAS/PASCAL_results/KEGG_Ensembl_Coding/'
@@ -16,6 +18,7 @@ GetGWASMetdata <- function(sigClusters=NULL,clusterLevel=T){
     PASCAL_results_raw <- PASCAL_results_raw[grep('sum.genescores',PASCAL_results_raw)]
     numSigGenesAll <- sapply(PASCAL_results_raw,function(x) data.table::fread(paste0(PASCAL_raw_Path,x)) %>%
                                   dplyr::filter(pvalue < 5e-8) %>% nrow)
+    #Create statistics for each study
     StudyName <- sapply(names(numSigGenesCoding),function(x) unlist(strsplit(x,'.sum'))[1])
     StudyName <- sapply(StudyName,function(x) gsub('[.]','_',x))
     df <- data.frame(StudyName,numSigGenesCoding,numSigGenesAll)
@@ -24,7 +27,7 @@ GetGWASMetdata <- function(sigClusters=NULL,clusterLevel=T){
     df <- left_join(df,GWASMetadata,by=c('Study Name'='StudyName')) %>% dplyr::rename('Num Subjects'=N)
     grid.arrange(tableGrob(df))
     
-  }else{
+  }else{#Global statistics (of network)
     #Genes which are include in Coding co-exp network 
     PASCAL_cluster_coding_path <- '/local/data/public/zmx21/zmx21_private/GSK/GWAS/PASCAL_results/Jaccard_Cor0p2/CodingGenesMicroglia_Jaccard_cor0p2_abs/'
     PASCAL_results_coding <- dir(PASCAL_cluster_coding_path)
@@ -69,9 +72,10 @@ GetGWASMetdata <- function(sigClusters=NULL,clusterLevel=T){
       numSigGenesInSigClustersAll[i] <- length(intersect(sigGenesAll[[i]],currentStudyIncludedGenes))
       
     }
+    #Sig genes in sig disease associated modules
     SigStudiesStats$N_SigCodingGenesInSigClusters <- numSigGenesInSigClustersCoding
     SigStudiesStats$N_SigAllGenesInSigClusters <- numSigGenesInSigClustersAll
-    
+    #Generate full metadata dataframe
     GWASFullMetadata <- dplyr::left_join(SigStudiesStats,GWASMetadata,by=c('StudyName'='StudyName')) %>% 
       dplyr::left_join(numSigClusters,by=c('StudyName'='StudyName')) %>% rename_('N_Subjects'='N','N_Sig_Clusters'='n')
     GWASFullMetadata <- GWASFullMetadata[,c('StudyName','N_Sig_Coding_Genes_In_Network',
@@ -87,6 +91,7 @@ GetGWASMetdata <- function(sigClusters=NULL,clusterLevel=T){
                            sum(GWASFullMetadata[,5]))
     colnames(totalRow) <- colnames(GWASFullMetadata)
     GWASFullMetadata <- rbind(GWASFullMetadata,totalRow)
+    #Draw ggtable
     library(gridExtra)
     t1 <- ttheme_default(core=list(
       fg_params=list(fontface=c(rep("plain", nrow(GWASFullMetadata)-1), "bold.italic")),
@@ -94,6 +99,7 @@ GetGWASMetdata <- function(sigClusters=NULL,clusterLevel=T){
                                   length.out=nrow(GWASFullMetadata)-1), "yellow"))
     ))
     grid.arrange(tableGrob(GWASFullMetadata,theme=t1))
+    return(GWASFullMetadata)
   }
 }
 

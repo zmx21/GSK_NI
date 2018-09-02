@@ -1,4 +1,6 @@
+##########################################################################################################
 #Filter all samples, according to mapping statistics. 
+##########################################################################################################
 FilterAllSamplesByMappingRate <- function(plots=T)
 {
   library(dplyr)
@@ -50,10 +52,12 @@ FilterAllSamplesByMappingRate <- function(plots=T)
       scale_x_discrete(name = "Sample",labels = wrap_format(5)) +
       scale_y_continuous(name = "TPM",limits = quantile(microglia_gene_df$values, c(0.1, 0.9))) + 
       theme(axis.text.x = element_text(angle = 90, hjust = 1,vjust = 0.6,size =15)) + 
-      ggtitle('Micrgolia Gene Level TPM') + 
       labs(fill='Passed Filter')
-    grid.arrange(p1)
+    grid.arrange(p1 + 
+                   ggtitle('Micrgolia Gene Level TPM'))
     dev.off()
+    
+    ggpubr::ggexport(ggpubr::ggarrange(p1),file='../../FinalFigures/Supplementary/TPMReadFiltering.pdf',width = 12,height = 4)
     
     brain_metadata <- CollectMetadata(TPM_WholeBrain_Gene) %>% 
       mutate(PercIntergenic=ifelse(is.na(intergenicTags) | intergenicTags==0,0,intergenicTags/totalTags)) %>%
@@ -79,14 +83,14 @@ FilterAllSamplesByMappingRate <- function(plots=T)
     MappingFilteringEnv <- environment()
   }
   #Remove samples from Galatro which have bad mapping. 
-  BadMappingGalatro <- read.table(file='/local/data/public/zmx21/zmx21_private/GSK/Galatro/STAR_aligned_merged/multiqc_data/multiqc_rseqc_read_distribution.txt',
+  BadMappingGalatro <- read.table(file='../../Galatro/STAR_aligned_merged/multiqc_data/multiqc_rseqc_read_distribution.txt',
                                   header = T,stringsAsFactors = F) %>% dplyr::select('Sample','cds_exons_tag_count','total_tags','other_intergenic_tag_count') %>% 
     dplyr::mutate(Sample_Name = sapply(.$Sample,function(x) unlist(strsplit(x,'[.]'))[1]),
                   PercExonic = round(as.numeric(cds_exons_tag_count/total_tags),2),
                   ExonicTags = round(as.numeric(cds_exons_tag_count),2),
                   PercIntergenic = round(as.numeric((other_intergenic_tag_count)/total_tags),2)) %>% 
     dplyr::filter(ExonicTags < 4e6 | PercIntergenic > 0.25) %>% dplyr::select(Sample_Name) %>% t() %>% as.vector() #Filter by mapping rate 
-  BadMappingGalatroBrain <- read.table(file='/local/data/public/zmx21/zmx21_private/GSK/Galatro_Brain/STAR_aligned_whole_brain/multiqc_data/multiqc_rseqc_read_distribution.txt',
+  BadMappingGalatroBrain <- read.table(file='../../Galatro_Brain/multiqc_rseqc_read_distribution.txt',
                                        header = T,stringsAsFactors = F) %>% dplyr::select('Sample','cds_exons_tag_count','total_tags','other_intergenic_tag_count') %>% 
     dplyr::mutate(Sample_Name = sapply(.$Sample,function(x) unlist(strsplit(x,'[.]'))[1]),
                   PercExonic = round(as.numeric(cds_exons_tag_count/total_tags),2),
@@ -95,7 +99,7 @@ FilterAllSamplesByMappingRate <- function(plots=T)
     dplyr::filter(ExonicTags < 4e6 | PercIntergenic > 0.25) %>% dplyr::select(Sample_Name) %>% t() %>% as.vector() #Filter by mapping rate 
   
   #Remove samples from Olah which have bad mapping.
-  BadMappingOlah <- read.table(file='/local/data/public/zmx21/zmx21_private/GSK/Olah/QC_Reports/star_multiqc_data/multiqc_rseqc_read_distribution.txt',
+  BadMappingOlah <- read.table(file='../../Gosselin/multiqc_rseqc_read_distribution.txt',
                                header = T,stringsAsFactors = F) %>% dplyr::select('Sample_Name'='Sample','cds_exons_tag_count','total_tags') %>% 
     dplyr::mutate(PercExonic = round(as.numeric(cds_exons_tag_count/total_tags),2),
                   ExonicTags = round(as.numeric(cds_exons_tag_count),2)) %>% 

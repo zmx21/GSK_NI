@@ -6,7 +6,7 @@
 LoadGTF <- function(full=F){
   library(refGenome)
   library(dplyr)
-  GTFPath <- '/local/data/public/zmx21/zmx21_private/GSK/GRCh37_Ensembl75/Homo_sapiens.GRCh37.75.gtf'
+  GTFPath <- '../../GRCh37_Ensembl75/Homo_sapiens.GRCh37.75.gtf'
   ens <- ensemblGenome()
   read.gtf(ens, GTFPath,useBasedir = F)
   gtfDf <- getGtf(ens)
